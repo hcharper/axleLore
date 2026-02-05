@@ -1,0 +1,461 @@
+# Toyota Land Cruiser FZJ80 Configuration
+# 1993-1997 with 1FZ-FE engine
+
+vehicle_type: fzj80
+name: "Toyota Land Cruiser FZJ80"
+manufacturer: toyota
+platform: "80-series"
+production_years: [1993, 1994, 1995, 1996, 1997]
+markets: [us, canada]
+
+# VIN Patterns
+vin_patterns:
+  - regex: "JT3DJ81W.*"
+    description: "US Market FZJ80"
+  - regex: "JT3HJ81W.*"  
+    description: "US Market FZJ80 (variant)"
+
+# Engine Configuration
+engine:
+  code: "1FZ-FE"
+  type: "inline-6"
+  displacement_cc: 4477
+  displacement_l: 4.5
+  fuel_type: "gasoline"
+  fuel_system: "EFI (multiport)"
+  horsepower: 212
+  torque_lb_ft: 275
+  compression_ratio: "9.0:1"
+  firing_order: "1-5-3-6-2-4"
+  bore_mm: 100
+  stroke_mm: 95
+  
+  fluids:
+    oil:
+      capacity_with_filter_qt: 6.8
+      capacity_without_filter_qt: 6.1
+      capacity_with_filter_l: 6.4
+      recommended_viscosity: ["5W-30", "10W-30"]
+      filter_part_number: "90915-YZZB6"
+      drain_plug_torque_ft_lbs: 27
+      
+    coolant:
+      capacity_qt: 15.1
+      capacity_l: 14.3
+      type: "Toyota Red (SLLC) or equivalent"
+      thermostat_opens_f: 180
+      
+  maintenance:
+    oil_change:
+      interval_miles: 5000
+      interval_km: 8000
+      interval_months: 6
+      severe_interval_miles: 3000
+      
+    timing_belt:
+      interval_miles: 90000
+      interval_km: 144000
+      interference: false
+      notes: "Non-interference, but failure can still strand you"
+      
+    spark_plugs:
+      interval_miles: 30000
+      part_number: "90919-01178"
+      gap_mm: 1.1
+      type: "Denso K20R-U11 or NGK BKR5EYA-11"
+      
+    valve_adjustment:
+      interval_miles: 60000
+      type: "shim under bucket"
+      
+    air_filter:
+      interval_miles: 30000
+      part_number: "17801-68020"
+
+# Transmission
+transmission:
+  automatic:
+    code: "A442F"
+    type: "4-speed automatic with overdrive"
+    gears:
+      first: 2.804
+      second: 1.531
+      third: 1.000
+      fourth: 0.705
+      reverse: 2.393
+    fluid_capacity_qt: 10.4
+    fluid_type: "Dexron III or Toyota Type T-IV"
+    filter_part_number: "35330-60050"
+    pan_gasket_part_number: "35168-60010"
+    drain_plug_torque_ft_lbs: 15
+    pan_bolt_torque_ft_lbs: 4
+    
+  manual:
+    code: "R151F"
+    type: "5-speed manual"
+    fluid_capacity_qt: 2.2
+    fluid_type: "GL-4 75W-90"
+    clutch_part_number: "31250-60310"
+
+# Transfer Case  
+transfer_case:
+  code: "HF2AV"
+  type: "full-time 4WD with center differential"
+  has_center_diff: true
+  has_center_locker: true
+  ratios:
+    high: 1.000
+    low: 2.488
+  fluid_capacity_qt: 1.5
+  fluid_type: "GL-5 80W-90"
+  shift_pattern: "H-2H-4H-N-4L"
+  notes: "Full-time 4WD, center diff lock for slippery conditions"
+
+# Axles
+axles:
+  front:
+    type: "solid axle with birfield CV joints"
+    housing: "high-pinion reverse-rotation"
+    diff_capacity_qt: 2.6
+    diff_type: "open standard, ARB locker optional"
+    fluid_type: "GL-5 80W-90"
+    gear_ratio_options: ["4.10", "4.30", "4.56", "5.29"]
+    stock_ratio: "4.10"
+    birfield_notes: "Weak point for large tires, consider chromoly upgrade"
+    knuckle_stud_torque_ft_lbs: 80
+    
+  rear:
+    type: "solid axle, semi-floating"
+    diff_capacity_qt: 3.2
+    diff_type: "open, limited-slip (e-locker available 96-97)"
+    fluid_type: "GL-5 80W-90"
+    axle_nut_torque_ft_lbs: 90
+
+# Brakes
+brakes:
+  front:
+    type: "ventilated disc"
+    rotor_diameter_mm: 310
+    rotor_diameter_in: 12.2
+    rotor_thickness_mm: 28
+    rotor_min_thickness_mm: 26
+    pad_thickness_min_mm: 1.0
+    caliper_type: "dual-piston sliding"
+    
+  rear:
+    type: "drum"
+    drum_diameter_mm: 295
+    drum_diameter_in: 11.6
+    shoe_thickness_min_mm: 1.0
+    
+  abs: true
+  abs_module: "Bosch 5.3"
+  
+  fluid:
+    type: "DOT 3"
+    capacity_qt: 1.0
+    
+  parking_brake:
+    type: "drum in hat on rear"
+    adjustment: "star wheel through access hole"
+
+# Suspension
+suspension:
+  front:
+    type: "coil spring, solid axle"
+    spring_part_number: "48131-60530"
+    shock_part_number: "48511-69505"
+    travel_in: 8
+    
+  rear:
+    type: "coil spring, solid axle with lateral rod"
+    spring_part_number: "48231-60550"
+    shock_part_number: "48531-69325"
+    travel_in: 10
+    
+  sway_bars:
+    front: true
+    front_diameter_mm: 28
+    rear: false
+
+# Steering
+steering:
+  type: "recirculating ball, power assisted"
+  ratio: "17.4:1"
+  turns_lock_to_lock: 4.0
+  turning_radius_ft: 40
+  power_steering_fluid: "ATF Dexron III"
+  ps_pump_part_number: "44310-60260"
+
+# Electrical
+electrical:
+  battery:
+    group_size: "27F"
+    cca: 650
+    location: "engine bay, driver side"
+    
+  alternator:
+    output_amps: 80
+    part_number: "27060-66060"
+    
+  starter:
+    part_number: "28100-66050"
+    
+  ecu:
+    type_pre_96: "OBD-I Toyota proprietary"
+    type_96_plus: "OBD-II compliant"
+    connector_pre_96: "Toyota 17-pin"
+    connector_96_plus: "OBD-II 16-pin"
+    
+  fuses:
+    main_box: "engine bay, driver side"
+    interior_box: "under dash, driver side"
+
+# Dimensions & Weights
+dimensions:
+  wheelbase_in: 112.2
+  wheelbase_mm: 2850
+  length_in: 189.0
+  width_in: 76.0
+  height_in: 73.0
+  ground_clearance_in: 8.7
+  approach_angle_deg: 35
+  departure_angle_deg: 24
+  breakover_angle_deg: 25
+
+weights:
+  curb_weight_lbs: 4850
+  curb_weight_kg: 2200
+  gvwr_lbs: 6250
+  payload_lbs: 1400
+  towing_capacity_lbs: 5000
+
+# Capacities
+capacities:
+  fuel_tank_gal: 25.1
+  fuel_tank_l: 95
+  cargo_volume_cu_ft: 90
+  seating: 8
+
+# Tires
+tires:
+  oem_size: "275/70R16"
+  alternatives:
+    - size: "285/75R16"
+      notes: "Fits stock, minor rubbing possible"
+    - size: "315/75R16"
+      notes: "Requires 2.5\"+ lift, possible trimming"
+    - size: "33x10.50R15"
+      notes: "Popular upgrade"
+    - size: "35x12.50R15"
+      notes: "Requires 3\"+ lift, regearing recommended"
+  rotation_interval_miles: 7500
+  pressure_front_psi: 29
+  pressure_rear_psi: 29
+  spare_location: "under rear cargo area"
+
+# Common Issues
+common_issues:
+  - code: "HEAD_GASKET"
+    description: "Head gasket failure, especially vehicles with cooling system neglect"
+    symptoms:
+      - "Overheating"
+      - "Coolant loss with no visible leak"
+      - "White exhaust smoke"
+      - "Milky oil"
+      - "Bubbles in coolant reservoir"
+    causes:
+      - "Inadequate coolant maintenance"
+      - "Overheating events"
+      - "Thermal cycling stress"
+    prevention:
+      - "Regular coolant flushes"
+      - "OEM thermostat"
+      - "Address overheating immediately"
+    affected_years: [1993, 1994, 1995, 1996, 1997]
+    severity: "high"
+    typical_cost_range: [2000, 4000]
+    
+  - code: "BIRFIELD_WEAR"
+    description: "CV joint (birfield) wear, especially with larger tires"
+    symptoms:
+      - "Clicking when turning"
+      - "Torn CV boot"
+      - "Grease on inside of wheel"
+    causes:
+      - "High mileage"
+      - "Aggressive off-road use"
+      - "Oversized tires"
+      - "Boot damage"
+    prevention:
+      - "Regular boot inspection"
+      - "Repack joints at 100k"
+    affected_years: [1993, 1994, 1995, 1996, 1997]
+    severity: "medium"
+    typical_cost_range: [500, 1500]
+    
+  - code: "CHARCOAL_CANISTER"
+    description: "Evaporative emissions charcoal canister saturation"
+    symptoms:
+      - "Fuel smell"
+      - "Check engine light"
+      - "Hard starting when hot"
+    causes:
+      - "Age"
+      - "Overfilling fuel tank"
+    fix: "Replace charcoal canister"
+    affected_years: [1993, 1994, 1995]
+    severity: "low"
+    typical_cost_range: [200, 400]
+
+  - code: "FRAME_RUST"
+    description: "Frame rust in salt belt regions"
+    symptoms:
+      - "Visible rust on frame"
+      - "Rust flaking"
+      - "Structural compromise"
+    affected_years: [1993, 1994, 1995, 1996, 1997]
+    severity: "critical"
+    regions: ["northeast_us", "midwest_us", "canada"]
+    prevention:
+      - "Annual undercoating"
+      - "Wash undercarriage after salt exposure"
+    fix: "Frame repair or replacement"
+
+  - code: "PS_PUMP_WHINE"
+    description: "Power steering pump whine/leak"
+    symptoms:
+      - "Whining noise when turning"
+      - "Fluid leak at pump"
+    affected_years: [1993, 1994, 1995, 1996, 1997]
+    severity: "medium"
+    typical_cost_range: [300, 600]
+
+# Popular Modifications
+modifications:
+  suspension:
+    - name: "OME Heavy Duty"
+      description: "Old Man Emu 2.5\" lift"
+      part_numbers:
+        front_springs: "2861"
+        rear_springs: "2863"
+        front_shocks: "N184"
+        rear_shocks: "N185"
+      lift_height: "2.5 inches"
+      notes: "Most popular option, great ride quality"
+      vendor: "ARB"
+      
+    - name: "Icon Stage 2"
+      description: "Icon 3\" lift with adjustable coilovers"
+      lift_height: "3 inches"
+      notes: "Premium option, excellent performance"
+      
+    - name: "Dobinsons"
+      description: "Australian brand, good value"
+      lift_height: "2-4 inches"
+      
+  armor:
+    - name: "SOR Rock Sliders"
+      description: "Bolt-on rocker protection"
+      vendor: "Specter Off-Road"
+      install_difficulty: "easy"
+      
+    - name: "Slee Off Road Front Bumper"
+      description: "Heavy duty front bumper with winch mount"
+      vendor: "Slee Off Road"
+      
+    - name: "Trail Gear Rear Bumper"
+      description: "Rear bumper with tire carrier"
+      
+  drivetrain:
+    - name: "ARB Air Locker"
+      locations: ["front", "rear"]
+      description: "Selectable air-activated locker"
+      notes: "Most popular locker, requires compressor"
+      
+    - name: "Detroit Locker"
+      locations: ["rear"]
+      description: "Automatic locking differential"
+      notes: "Best for dedicated off-road use"
+      
+    - name: "4.88 Regear"
+      description: "Lower gear ratio for larger tires"
+      notes: "Recommended for 33\"+ tires"
+      
+  electrical:
+    - name: "Dual Battery"
+      description: "Second battery for accessories"
+      common_location: "passenger side fender"
+      
+    - name: "LED Headlight Conversion"
+      description: "Modern LED lighting upgrade"
+
+# Knowledge Sources
+knowledge_sources:
+  fsm:
+    name: "Toyota Factory Service Manual"
+    volumes:
+      - "Engine & Chassis (RM356U)"
+      - "Body & Electrical (RM357U)"
+      - "Electrical Wiring Diagrams (EM026U)"
+    years_covered: [1993, 1994, 1995, 1996, 1997]
+    
+  forums:
+    - name: "IH8MUD"
+      url: "https://forum.ih8mud.com/"
+      sections:
+        - "80-Series Tech"
+        - "Newbie Tech"
+        - "80-Series Build Threads"
+      quality: "excellent"
+      notes: "Best source for 80 series info"
+      
+    - name: "Land Cruiser World"
+      url: "https://landcruiserworld.com/"
+      quality: "good"
+      
+  vendors:
+    - name: "SOR (Specter Off-Road)"
+      url: "https://sor.com/"
+      specialty: ["parts", "restoration", "accessories"]
+      
+    - name: "Cruiser Corps"
+      specialty: ["used parts", "parting vehicles"]
+      
+    - name: "Cruiser Outfitters"
+      url: "https://cruiseroutfitters.com/"
+      specialty: ["off-road accessories"]
+      
+    - name: "Toyota Dealership"
+      specialty: ["OEM parts"]
+      notes: "Still stocks most parts"
+
+# Related Vehicles
+related_vehicles:
+  - vehicle_type: "fj80"
+    name: "Toyota Land Cruiser FJ80"
+    relationship: "same platform, different engine (3F-E carbureted)"
+    years: [1990, 1991, 1992]
+    shared_systems:
+      - "axles"
+      - "body" 
+      - "suspension"
+      - "steering"
+      - "brakes"
+    different_systems:
+      - "engine (3F-E vs 1FZ-FE)"
+      - "fuel system (carb vs EFI)"
+      - "electrical"
+      
+  - vehicle_type: "lx450"
+    name: "Lexus LX450"
+    relationship: "Lexus luxury variant"
+    years: [1996, 1997]
+    shared_systems:
+      - "drivetrain"
+      - "chassis"
+      - "engine"
+    different_systems:
+      - "interior"
+      - "body trim"
+      - "electronics"

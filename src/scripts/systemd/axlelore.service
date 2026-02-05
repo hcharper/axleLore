@@ -1,0 +1,15 @@
+[Unit]
+Description=AxleLore Vehicle Assistant
+After=network.target ollama.service
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/home/%i/axlelore
+Environment="PATH=/home/%i/axlelore/.venv/bin"
+ExecStart=/home/%i/axlelore/.venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
