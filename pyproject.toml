@@ -8,7 +8,7 @@ license = { text = "MIT" }
 authors = [
     { name = "AxleLore Team" }
 ]
-keywords = ["automotive", "llm", "raspberry-pi", "obd2", "vehicle-assistant"]
+keywords = ["automotive", "llm", "raspberry-pi", "obd2", "vehicle-assistant", "rag", "edge-ai"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: End Users/Desktop",
@@ -23,7 +23,8 @@ dependencies = [
     "uvicorn[standard]>=0.27.0",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",
-    "sqlalchemy>=2.0.25",
+    "sqlalchemy[asyncio]>=2.0.25",
+    "aiosqlite>=0.19.0",
     "alembic>=1.13.0",
     "chromadb>=0.4.22",
     "sentence-transformers>=2.3.0",
@@ -56,9 +57,9 @@ build = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/axlelore/axlelore"
-"Bug Reports" = "https://github.com/axlelore/axlelore/issues"
-"Source" = "https://github.com/axlelore/axlelore"
+"Homepage" = "https://github.com/hcharper/axleLore"
+"Bug Reports" = "https://github.com/hcharper/axleLore/issues"
+"Source" = "https://github.com/hcharper/axleLore"
 
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]

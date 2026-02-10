@@ -36,16 +36,19 @@ echo -e "${GREEN}✓ Python version: $PYTHON_VERSION${NC}"
 
 # Check available memory
 TOTAL_MEM=$(free -m | awk '/^Mem:/{print $2}')
+if [[ $TOTAL_MEM -lt 3500 ]]; then
+    echo -e "${RED}At least 4GB RAM required. Found: ${TOTAL_MEM}MB${NC}"
+    exit 1
+fi
 if [[ $TOTAL_MEM -lt 7000 ]]; then
-    echo -e "${YELLOW}⚠ Warning: Less than 8GB RAM detected (${TOTAL_MEM}MB)${NC}"
-    echo "  AxleLore requires 8GB RAM for optimal performance"
+    echo -e "${YELLOW}⚠ Less than 8GB RAM (${TOTAL_MEM}MB) — performance may be limited${NC}"
 fi
 echo -e "${GREEN}✓ Memory: ${TOTAL_MEM}MB${NC}"
 
-# Check available disk space
+# Check available disk space (model ~1.4GB + KB + deps ≈ 10GB)
 AVAILABLE_SPACE=$(df -BG . | awk 'NR==2 {print $4}' | tr -d 'G')
-if [[ $AVAILABLE_SPACE -lt 30 ]]; then
-    echo -e "${YELLOW}⚠ Warning: Less than 30GB free space detected (${AVAILABLE_SPACE}GB)${NC}"
+if [[ $AVAILABLE_SPACE -lt 10 ]]; then
+    echo -e "${YELLOW}⚠ Warning: Less than 10GB free space detected (${AVAILABLE_SPACE}GB)${NC}"
 fi
 echo -e "${GREEN}✓ Disk space: ${AVAILABLE_SPACE}GB available${NC}"
 
@@ -94,10 +97,18 @@ if ! pgrep -x "ollama" > /dev/null; then
     sleep 5
 fi
 
-# Pull the model
-echo -e "\n${YELLOW}Downloading LLM model (this may take a while)...${NC}"
-ollama pull mistral:7b-instruct-q4_K_M
-echo -e "${GREEN}✓ Model downloaded${NC}"
+# Pull the primary model (Qwen3 1.7B — ~1.4 GB download)
+echo -e "\n${YELLOW}Downloading LLM model (Qwen3 1.7B)...${NC}"
+ollama pull qwen3:1.7b
+echo -e "${GREEN}✓ Primary model downloaded${NC}"
+
+# Optionally pull the fallback model
+echo -e "${YELLOW}Download fallback model Gemma3 1B? (y/n)${NC}"
+read -r PULL_FALLBACK
+if [[ "$PULL_FALLBACK" == "y" ]]; then
+    ollama pull gemma3:1b
+    echo -e "${GREEN}✓ Fallback model downloaded${NC}"
+fi
 
 # Create data directories
 echo -e "\n${YELLOW}Creating data directories...${NC}"

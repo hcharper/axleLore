@@ -1,7 +1,16 @@
-"""Chat/LLM service for AxleLore."""
-from typing import Optional, AsyncIterator
-from dataclasses import dataclass
+"""Chat / LLM service for AxleLore.
+
+Wraps the Ollama REST API.  System prompt is kept short and structured
+so the 1.7 B-parameter model can follow instructions reliably.
+"""
+
+from __future__ import annotations
+
+import json
 import logging
+from dataclasses import dataclass
+from typing import AsyncIterator, Optional
+
 import httpx
 
 from backend.core.config import settings
@@ -9,119 +18,113 @@ from backend.core.config import settings
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Data class
+# ---------------------------------------------------------------------------
+
 @dataclass
 class LLMResponse:
-    """Response from LLM."""
     content: str
     tokens_used: int
     model: str
 
 
-SYSTEM_PROMPT = """You are AxleLore, an expert automotive assistant specializing in the {vehicle_type}. 
+# ---------------------------------------------------------------------------
+# System prompt — intentionally concise for a small model
+# ---------------------------------------------------------------------------
 
-You have deep knowledge of:
-- Factory Service Manual (FSM) procedures and specifications
-- Technical Service Bulletins (TSBs) and recalls
-- Enthusiast forum wisdom from IH8MUD and related communities
-- Common modifications and their impacts
-- Troubleshooting and diagnostics
+SYSTEM_PROMPT = """\
+You are AxleLore, a technician expert on the {vehicle_name}.
+
+RULES (follow strictly):
+- Answer ONLY from the RETRIEVED KNOWLEDGE below.  If the knowledge does not cover the question, say "I don't have that information."
+- NEVER guess about safety items (brakes, steering, fuel, structural).
+- Cite sources: [FSM], [IH8MUD], or [PARTS].
+- Include part numbers and torque specs when available.
+- Keep answers focused and structured.
 
 {vehicle_context}
+{retrieved_context}"""
 
-Guidelines:
-1. Be specific and technical when appropriate
-2. Cite sources when possible (FSM section, forum thread, etc.)
-3. If unsure, say so - NEVER guess on safety-critical information
-4. Include part numbers when relevant
-5. Consider the user's skill level based on the conversation
-6. For procedures, include torque specs, fluid capacities, and special tools needed
 
-{retrieved_context}
-"""
-
+# ---------------------------------------------------------------------------
+# Service
+# ---------------------------------------------------------------------------
 
 class ChatService:
-    """Service for chat/LLM interactions.
-    
-    Handles:
-    - Ollama communication
-    - Prompt construction
-    - Response streaming
-    - Chat history management
-    """
-    
+    """Async Ollama client with prompt management."""
+
     def __init__(
         self,
-        ollama_host: str = None,
-        model: str = None,
-        timeout: int = None
-    ):
+        ollama_host: str | None = None,
+        model: str | None = None,
+        timeout: int | None = None,
+    ) -> None:
         self.ollama_host = ollama_host or settings.ollama_host
         self.model = model or settings.ollama_model
+        self.fallback_model = settings.ollama_fallback_model
         self.timeout = timeout or settings.ollama_timeout
         self.client = httpx.AsyncClient(timeout=self.timeout)
-    
+
+    # -- generation -------------------------------------------------------
+
     async def generate(
         self,
         prompt: str,
         system_prompt: str,
-        temperature: float = 0.7,
-        max_tokens: int = 2000
+        temperature: float | None = None,
+        max_tokens: int | None = None,
     ) -> LLMResponse:
-        """Generate a response from Ollama.
-        
-        Args:
-            prompt: User's message
-            system_prompt: System instructions
-            temperature: Sampling temperature
-            max_tokens: Maximum response tokens
-            
-        Returns:
-            LLM response
-        """
+        """Non-streaming generation via Ollama."""
+        temp = temperature if temperature is not None else settings.llm_temperature
+        max_tok = max_tokens or settings.llm_max_tokens
+
+        model = self.model
         try:
-            response = await self.client.post(
-                f"{self.ollama_host}/api/generate",
-                json={
-                    "model": self.model,
-                    "prompt": prompt,
-                    "system": system_prompt,
-                    "stream": False,
-                    "options": {
-                        "temperature": temperature,
-                        "num_predict": max_tokens,
-                    }
-                }
-            )
-            response.raise_for_status()
-            data = response.json()
-            
-            return LLMResponse(
-                content=data.get("response", ""),
-                tokens_used=data.get("eval_count", 0),
-                model=self.model
-            )
-            
-        except httpx.HTTPError as e:
-            logger.error(f"Ollama request failed: {e}")
-            raise
-    
+            return await self._call_generate(model, prompt, system_prompt, temp, max_tok)
+        except httpx.HTTPError:
+            # Attempt fallback model
+            logger.warning("Primary model failed, trying fallback: %s", self.fallback_model)
+            model = self.fallback_model
+            return await self._call_generate(model, prompt, system_prompt, temp, max_tok)
+
+    async def _call_generate(
+        self,
+        model: str,
+        prompt: str,
+        system_prompt: str,
+        temperature: float,
+        max_tokens: int,
+    ) -> LLMResponse:
+        response = await self.client.post(
+            f"{self.ollama_host}/api/generate",
+            json={
+                "model": model,
+                "prompt": prompt,
+                "system": system_prompt,
+                "stream": False,
+                "options": {
+                    "temperature": temperature,
+                    "num_predict": max_tokens,
+                },
+            },
+        )
+        response.raise_for_status()
+        data = response.json()
+        return LLMResponse(
+            content=data.get("response", ""),
+            tokens_used=data.get("eval_count", 0),
+            model=model,
+        )
+
     async def generate_stream(
         self,
         prompt: str,
         system_prompt: str,
-        temperature: float = 0.7
+        temperature: float | None = None,
     ) -> AsyncIterator[str]:
-        """Stream response from Ollama.
-        
-        Args:
-            prompt: User's message
-            system_prompt: System instructions
-            temperature: Sampling temperature
-            
-        Yields:
-            Response tokens as they're generated
-        """
+        """Stream tokens from Ollama."""
+        temp = temperature if temperature is not None else settings.llm_temperature
         try:
             async with self.client.stream(
                 "POST",
@@ -131,43 +134,46 @@ class ChatService:
                     "prompt": prompt,
                     "system": system_prompt,
                     "stream": True,
-                    "options": {
-                        "temperature": temperature,
-                    }
-                }
+                    "options": {"temperature": temp},
+                },
             ) as response:
                 async for line in response.aiter_lines():
                     if line:
-                        import json
                         data = json.loads(line)
                         if "response" in data:
                             yield data["response"]
-                            
         except httpx.HTTPError as e:
-            logger.error(f"Ollama streaming failed: {e}")
+            logger.error("Ollama streaming failed: %s", e)
             raise
-    
-    async def check_health(self) -> bool:
-        """Check if Ollama is available."""
+
+    # -- health -----------------------------------------------------------
+
+    async def check_health(self) -> dict:
+        """Return Ollama status and available models."""
         try:
-            response = await self.client.get(f"{self.ollama_host}/api/tags")
-            return response.status_code == 200
+            resp = await self.client.get(f"{self.ollama_host}/api/tags")
+            if resp.status_code == 200:
+                models = [m["name"] for m in resp.json().get("models", [])]
+                return {"status": "ok", "models": models}
+            return {"status": "error", "models": []}
         except httpx.HTTPError:
-            return False
-    
+            return {"status": "unreachable", "models": []}
+
+    # -- prompt helpers ---------------------------------------------------
+
     def build_system_prompt(
         self,
-        vehicle_type: str,
+        vehicle_name: str,
         vehicle_context: str = "",
-        retrieved_context: str = ""
+        retrieved_context: str = "",
     ) -> str:
-        """Build system prompt with vehicle and RAG context."""
         return SYSTEM_PROMPT.format(
-            vehicle_type=vehicle_type,
+            vehicle_name=vehicle_name,
             vehicle_context=vehicle_context,
-            retrieved_context=retrieved_context
+            retrieved_context=retrieved_context,
         )
-    
-    async def close(self):
-        """Close the HTTP client."""
+
+    # -- lifecycle --------------------------------------------------------
+
+    async def close(self) -> None:
         await self.client.aclose()

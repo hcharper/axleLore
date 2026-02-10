@@ -1,35 +1,25 @@
-"""Service records API routes for AxleLore."""
-from typing import Optional
+"""Service records API routes — owner service log + maintenance schedules."""
+
+from __future__ import annotations
+
 from datetime import datetime
-from enum import Enum
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from backend.models.session import get_session
+from backend.services import vehicle_service
 
 router = APIRouter(prefix="/service", tags=["service"])
 
 
-class ServiceType(str, Enum):
-    """Standardized service types."""
-    OIL_CHANGE = "oil_change"
-    TIRE_ROTATION = "tire_rotation"
-    AIR_FILTER = "air_filter"
-    BRAKE_INSPECTION = "brake_inspection"
-    TIMING_BELT = "timing_belt"
-    SPARK_PLUGS = "spark_plugs"
-    TRANSMISSION_SERVICE = "transmission_service"
-    DIFF_SERVICE = "diff_service"
-    COOLANT_FLUSH = "coolant_flush"
-    BRAKE_PADS = "brake_pads"
-    BRAKE_ROTORS = "brake_rotors"
-    SUSPENSION = "suspension"
-    ENGINE_REPAIR = "engine_repair"
-    LIFT_INSTALL = "lift_install"
-    LOCKER_INSTALL = "locker_install"
-    OTHER = "other"
-
+# ---------------------------------------------------------------------------
+# Schemas
+# ---------------------------------------------------------------------------
 
 class PartUsed(BaseModel):
-    """Part used in service."""
     part_number: Optional[str] = None
     name: str
     quantity: int = 1
@@ -37,10 +27,9 @@ class PartUsed(BaseModel):
     brand: Optional[str] = None
 
 
-class ServiceRecordBase(BaseModel):
-    """Base service record schema."""
+class ServiceRecordCreate(BaseModel):
     service_date: datetime
-    service_type: ServiceType
+    service_type: str = Field(..., description="e.g. oil_change, timing_belt, other")
     mileage: Optional[int] = None
     description: Optional[str] = None
     cost: Optional[float] = None
@@ -49,99 +38,92 @@ class ServiceRecordBase(BaseModel):
     location: Optional[str] = None
     next_service_mileage: Optional[int] = None
     next_service_date: Optional[datetime] = None
-    notes: Optional[str] = None
 
 
-class ServiceRecordCreate(ServiceRecordBase):
-    """Create service record."""
-    pass
-
-
-class ServiceRecordRead(ServiceRecordBase):
-    """Read service record."""
+class ServiceRecordOut(BaseModel):
     id: int
     vehicle_id: int
+    service_date: datetime
+    service_type: Optional[str] = None
+    mileage: Optional[int] = None
+    description: Optional[str] = None
+    cost: Optional[float] = None
+    parts_used: Optional[list | dict] = None
+    performed_by: Optional[str] = None
+    location: Optional[str] = None
+    next_service_mileage: Optional[int] = None
+    next_service_date: Optional[datetime] = None
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 
 
-@router.get("/{vehicle_id}/records", response_model=list[ServiceRecordRead])
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
+
+@router.get("/{vehicle_id}/records", response_model=list[ServiceRecordOut])
 async def list_service_records(
     vehicle_id: int,
-    service_type: Optional[ServiceType] = None,
-    limit: int = 100
-) -> list[ServiceRecordRead]:
-    """List service records for a vehicle."""
-    # TODO: Implement database query
-    return []
+    limit: int = 100,
+    session: AsyncSession = Depends(get_session),
+):
+    records = await vehicle_service.get_service_records(session, vehicle_id, limit=limit)
+    return records
 
 
-@router.post("/{vehicle_id}/records", response_model=ServiceRecordRead)
+@router.post("/{vehicle_id}/records", response_model=ServiceRecordOut, status_code=201)
 async def create_service_record(
     vehicle_id: int,
-    record: ServiceRecordCreate
-) -> ServiceRecordRead:
-    """Create a new service record."""
-    # TODO: Implement service record creation
-    raise HTTPException(status_code=501, detail="Not implemented")
+    body: ServiceRecordCreate,
+    session: AsyncSession = Depends(get_session),
+):
+    # Verify vehicle exists
+    vehicle = await vehicle_service.get_vehicle(session, vehicle_id)
+    if vehicle is None:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
 
+    parts_data = [p.model_dump() for p in body.parts_used] if body.parts_used else None
 
-@router.get("/{vehicle_id}/records/{record_id}", response_model=ServiceRecordRead)
-async def get_service_record(vehicle_id: int, record_id: int) -> ServiceRecordRead:
-    """Get a specific service record."""
-    # TODO: Implement record retrieval
-    raise HTTPException(status_code=404, detail="Service record not found")
+    record = await vehicle_service.add_service_record(
+        session,
+        vehicle_id=vehicle_id,
+        service_date=body.service_date,
+        service_type=body.service_type,
+        mileage=body.mileage,
+        description=body.description,
+        cost=body.cost,
+        parts_used=parts_data,
+        performed_by=body.performed_by,
+        location=body.location,
+        next_service_mileage=body.next_service_mileage,
+        next_service_date=body.next_service_date,
+    )
+    return record
 
 
 @router.delete("/{vehicle_id}/records/{record_id}")
-async def delete_service_record(vehicle_id: int, record_id: int) -> dict:
-    """Delete a service record."""
-    # TODO: Implement record deletion
+async def delete_service_record(
+    vehicle_id: int,
+    record_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    from backend.models.database import ServiceRecord
+
+    record = await session.get(ServiceRecord, record_id)
+    if record is None or record.vehicle_id != vehicle_id:
+        raise HTTPException(status_code=404, detail="Service record not found")
+    await session.delete(record)
+    await session.commit()
     return {"status": "ok", "message": f"Service record {record_id} deleted"}
 
 
 @router.get("/schedules/{vehicle_type}")
-async def get_maintenance_schedule(vehicle_type: str) -> dict:
-    """Get maintenance schedule for a vehicle type."""
-    # TODO: Load from vehicle config
-    if vehicle_type == "fzj80":
-        return {
-            "vehicle_type": "fzj80",
-            "schedules": [
-                {
-                    "service_type": "oil_change",
-                    "interval_miles": 5000,
-                    "interval_months": 6,
-                    "description": "Engine oil and filter change"
-                },
-                {
-                    "service_type": "tire_rotation",
-                    "interval_miles": 7500,
-                    "description": "Rotate tires front to back"
-                },
-                {
-                    "service_type": "timing_belt",
-                    "interval_miles": 90000,
-                    "description": "Replace timing belt and water pump"
-                },
-                {
-                    "service_type": "diff_service",
-                    "interval_miles": 30000,
-                    "description": "Change front and rear differential fluid"
-                },
-                {
-                    "service_type": "transmission_service",
-                    "interval_miles": 30000,
-                    "description": "Change transmission fluid and filter"
-                },
-                {
-                    "service_type": "coolant_flush",
-                    "interval_miles": 30000,
-                    "interval_months": 24,
-                    "description": "Flush and replace coolant"
-                }
-            ]
-        }
-    raise HTTPException(status_code=404, detail=f"Vehicle type {vehicle_type} not found")
+async def get_maintenance_schedule(vehicle_type: str):
+    """Return maintenance schedule derived from YAML config."""
+    try:
+        schedules = vehicle_service.get_maintenance_schedule(vehicle_type)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Vehicle type {vehicle_type} not found")
+    return {"vehicle_type": vehicle_type, "schedules": schedules}
