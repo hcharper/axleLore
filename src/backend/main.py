@@ -145,6 +145,8 @@ async def api_info():
             "service": "/api/v1/service",
             "obd2": "/api/v1/obd2",
             "kb": "/api/v1/kb/status",
+            "system_device": "/api/v1/system/device",
+            "system_version": "/api/v1/system/version",
             "health": "/health",
             "docs": "/docs",
         },

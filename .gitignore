@@ -4,7 +4,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
@@ -100,3 +99,10 @@ yarn.lock
 # Build artifacts
 *.tar.gz
 *.zip
+build/output/
+build/CustomPiOS/
+build/modules/axlelore/filesystem/
+
+# Knowledge packs (large binary data)
+data/knowledge_packs/
+data/chromadb/

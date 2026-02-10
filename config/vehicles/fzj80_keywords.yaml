@@ -1,0 +1,95 @@
+# FZJ80 RAG keyword routing
+# Maps query keywords → ChromaDB collection categories to search.
+# More specific keywords should route to fewer, more targeted collections.
+# The RAG service falls back to a broad default if no keywords match.
+
+keyword_routes:
+  # Engine
+  engine:     [engine, forum_troubleshoot, tsb]
+  1fz:        [engine, forum_troubleshoot]
+  1fz-fe:     [engine, forum_troubleshoot]
+  overheating: [engine, forum_troubleshoot, tsb]
+  head gasket: [engine, forum_troubleshoot]
+  oil:        [engine, forum_maintenance]
+  coolant:    [engine, forum_troubleshoot]
+  fuel:       [engine, forum_troubleshoot]
+  efi:        [engine, electrical]
+  idle:       [engine, forum_troubleshoot]
+  knock:      [engine, forum_troubleshoot]
+  exhaust:    [engine, forum_maintenance]
+  timing:     [engine, forum_maintenance]
+  valve:      [engine, forum_maintenance]
+  spark plug: [engine, forum_maintenance]
+
+  # Drivetrain
+  transmission: [drivetrain, forum_troubleshoot]
+  transfer case: [drivetrain, forum_troubleshoot]
+  t-case:     [drivetrain, forum_troubleshoot]
+  axle:       [drivetrain, forum_troubleshoot]
+  birfield:   [drivetrain, forum_troubleshoot]
+  diff:       [drivetrain, forum_mods]
+  differential: [drivetrain, forum_mods]
+  locker:     [drivetrain, forum_mods]
+  locking hub: [drivetrain, forum_troubleshoot]
+  driveshaft: [drivetrain, forum_troubleshoot]
+  clutch:     [drivetrain, forum_troubleshoot]
+  4wd:        [drivetrain, forum_troubleshoot]
+  cdc:        [drivetrain, forum_troubleshoot]
+
+  # Chassis / suspension / brakes / steering
+  brake:      [chassis, forum_maintenance]
+  suspension: [chassis, forum_mods]
+  lift:       [chassis, forum_mods]
+  spring:     [chassis, forum_mods]
+  shock:      [chassis, forum_mods]
+  steering:   [chassis, forum_maintenance]
+  knuckle:    [chassis, drivetrain, forum_troubleshoot]
+  wheel bearing: [chassis, forum_maintenance]
+  bushing:    [chassis, forum_maintenance]
+  sway bar:   [chassis, forum_mods]
+  uca:        [chassis, forum_mods]
+  tie rod:    [chassis, forum_maintenance]
+
+  # Electrical
+  electrical: [electrical, forum_troubleshoot]
+  wiring:     [electrical, forum_troubleshoot]
+  fuse:       [electrical]
+  ecu:        [electrical]
+  obd:        [electrical, tsb]
+  alternator: [electrical, forum_troubleshoot]
+  starter:    [electrical, forum_troubleshoot]
+  battery:    [electrical, forum_maintenance]
+  relay:      [electrical, forum_troubleshoot]
+  sensor:     [electrical, engine]
+  gauge:      [electrical, forum_troubleshoot]
+
+  # Body
+  rust:       [body, forum_troubleshoot]
+  body:       [body]
+  door:       [body, forum_troubleshoot]
+  window:     [body, electrical]
+  seal:       [body, forum_maintenance]
+  paint:      [body]
+  frame:      [body, forum_troubleshoot]
+
+  # Parts & mods
+  part number: [parts]
+  replace:    [parts, forum_maintenance]
+  mod:        [forum_mods]
+  install:    [forum_mods]
+  bumper:     [forum_mods, parts]
+  winch:      [forum_mods]
+  roof rack:  [forum_mods]
+  snorkel:    [forum_mods]
+  armor:      [forum_mods, parts]
+  sliders:    [forum_mods, parts]
+  tire:       [forum_mods, chassis]
+  wheel:      [forum_mods, chassis]
+
+# Default collections to search when no keywords match
+default_collections:
+  - engine
+  - drivetrain
+  - chassis
+  - forum_troubleshoot
+  - general

@@ -65,6 +65,9 @@ class Settings(BaseSettings):
     # Vehicle settings
     default_vehicle: str = "fzj80"
 
+    # Update server (used by check-update.sh and system API)
+    update_base_url: str = "https://api.axlelore.com"
+
     # Logging
     log_level: str = "INFO"
     log_file: str = str(_PROJECT_ROOT / "data" / "logs" / "axlelore.log")

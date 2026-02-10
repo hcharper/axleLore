@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional, Sequence
 
+import yaml
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 
@@ -58,40 +59,50 @@ COLLECTION_CATEGORIES: list[str] = [
     "general",
 ]
 
-# Maps user-query keywords → collections to search (targeted retrieval)
-_KEYWORD_ROUTES: dict[str, list[str]] = {
+# Maps user-query keywords → collections to search (targeted retrieval).
+# Loaded per-vehicle from config/vehicles/<type>_keywords.yaml.
+# Falls back to a hardcoded default if no YAML is found.
+
+_DEFAULT_KEYWORD_ROUTES: dict[str, list[str]] = {
     "engine": ["engine", "forum_troubleshoot", "tsb"],
-    "1fz": ["engine", "forum_troubleshoot"],
-    "overheating": ["engine", "forum_troubleshoot", "tsb"],
-    "head gasket": ["engine", "forum_troubleshoot"],
     "oil": ["engine", "forum_maintenance"],
     "coolant": ["engine", "forum_troubleshoot"],
     "transmission": ["drivetrain", "forum_troubleshoot"],
-    "transfer case": ["drivetrain", "forum_troubleshoot"],
     "axle": ["drivetrain", "forum_troubleshoot"],
-    "birfield": ["drivetrain", "forum_troubleshoot"],
-    "diff": ["drivetrain", "forum_mods"],
-    "locker": ["drivetrain", "forum_mods"],
     "brake": ["chassis", "forum_maintenance"],
     "suspension": ["chassis", "forum_mods"],
-    "lift": ["chassis", "forum_mods"],
-    "spring": ["chassis", "forum_mods"],
-    "shock": ["chassis", "forum_mods"],
-    "steering": ["chassis", "forum_maintenance"],
     "electrical": ["electrical", "forum_troubleshoot"],
     "wiring": ["electrical", "forum_troubleshoot"],
-    "fuse": ["electrical"],
-    "ecu": ["electrical"],
-    "obd": ["electrical", "tsb"],
-    "rust": ["body", "forum_troubleshoot"],
-    "body": ["body"],
-    "part number": ["parts"],
-    "replace": ["parts", "forum_maintenance"],
     "mod": ["forum_mods"],
     "install": ["forum_mods"],
-    "bumper": ["forum_mods", "parts"],
-    "winch": ["forum_mods"],
+    "part number": ["parts"],
+    "replace": ["parts", "forum_maintenance"],
+    "rust": ["body", "forum_troubleshoot"],
 }
+
+_DEFAULT_FALLBACK_COLLECTIONS: list[str] = [
+    "engine", "drivetrain", "chassis", "forum_troubleshoot", "general",
+]
+
+
+def _load_keyword_routes(vehicle_type: str) -> tuple[dict[str, list[str]], list[str]]:
+    """Load keyword → collection routing from a vehicle's YAML config.
+
+    Returns (keyword_routes, default_collections).
+    Falls back to built-in defaults if YAML is missing.
+    """
+    yaml_path = settings.vehicles_config_dir / f"{vehicle_type}_keywords.yaml"
+    if yaml_path.is_file():
+        try:
+            with open(yaml_path) as f:
+                data = yaml.safe_load(f) or {}
+            routes = data.get("keyword_routes", {})
+            defaults = data.get("default_collections", _DEFAULT_FALLBACK_COLLECTIONS)
+            logger.info("Loaded keyword routing for %s (%d keywords)", vehicle_type, len(routes))
+            return routes, defaults
+        except Exception as exc:
+            logger.warning("Failed to load %s: %s — using defaults", yaml_path, exc)
+    return _DEFAULT_KEYWORD_ROUTES, _DEFAULT_FALLBACK_COLLECTIONS
 
 
 class RAGService:
@@ -109,6 +120,10 @@ class RAGService:
         self.embedding_model_name = embedding_model_name or settings.embedding_model
         self.top_k = top_k or settings.retrieval_top_k
         self.similarity_threshold = similarity_threshold or settings.similarity_threshold
+
+        # Per-vehicle keyword routing (lazily loaded)
+        self._keyword_routes: dict[str, dict[str, list[str]]] = {}
+        self._default_collections: dict[str, list[str]] = {}
 
         # Lazy-loaded resources
         self._client: chromadb.ClientAPI | None = None
@@ -161,7 +176,7 @@ class RAGService:
         """
         n = n_results or self.top_k
         if categories is None:
-            categories = self._route_query(query)
+            categories = self._route_query(query, vehicle_type=vehicle_type)
 
         query_embedding = self.embedder.encode([query])[0].tolist()
 
@@ -243,16 +258,30 @@ class RAGService:
 
     # -- internal helpers --------------------------------------------------
 
-    def _route_query(self, query: str) -> list[str]:
-        """Keyword-based collection routing for targeted retrieval."""
+    def _route_query(self, query: str, vehicle_type: str | None = None) -> list[str]:
+        """Keyword-based collection routing for targeted retrieval.
+
+        Routes are loaded from config/vehicles/<type>_keywords.yaml on first
+        use, then cached for the lifetime of the service.
+        """
+        vtype = vehicle_type or settings.default_vehicle
+
+        # Lazy-load keyword routes for this vehicle type
+        if vtype not in self._keyword_routes:
+            routes, defaults = _load_keyword_routes(vtype)
+            self._keyword_routes[vtype] = routes
+            self._default_collections[vtype] = defaults
+
+        routes = self._keyword_routes[vtype]
+        defaults = self._default_collections[vtype]
+
         query_lower = query.lower()
         matched: set[str] = set()
-        for keyword, cats in _KEYWORD_ROUTES.items():
+        for keyword, cats in routes.items():
             if keyword in query_lower:
                 matched.update(cats)
         if not matched:
-            # Default broad search
-            matched = {"engine", "drivetrain", "chassis", "forum_troubleshoot", "general"}
+            matched = set(defaults)
         return list(matched)
 
     @staticmethod

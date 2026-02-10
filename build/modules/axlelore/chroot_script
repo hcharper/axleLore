@@ -1,0 +1,238 @@
+#!/usr/bin/env bash
+# CustomPiOS chroot_script — runs INSIDE the image at build time.
+# Installs AxleLore, Ollama, models, knowledge pack, and system services.
+set -euo pipefail
+
+echo ">>> AxleLore chroot_script: begin"
+
+# ──────────────────────────────────────────────
+# 1. System packages
+# ──────────────────────────────────────────────
+apt-get update
+apt-get install -y --no-install-recommends \
+    python3 python3-venv python3-pip python3-dev \
+    git curl wget avahi-daemon avahi-utils \
+    bluez libglib2.0-dev libdbus-1-dev \
+    network-manager \
+    gpg
+apt-get clean
+
+# Enable NetworkManager (needed for wifi-connect)
+systemctl enable NetworkManager
+systemctl disable dhcpcd 2>/dev/null || true
+
+# ──────────────────────────────────────────────
+# 2. Create axlelore user
+# ──────────────────────────────────────────────
+if ! id -u "${AXLELORE_USER}" &>/dev/null; then
+    useradd -r -m -d /home/${AXLELORE_USER} -s /bin/bash "${AXLELORE_USER}"
+    usermod -aG dialout,bluetooth "${AXLELORE_USER}"
+fi
+
+# ──────────────────────────────────────────────
+# 3. Install application
+# ──────────────────────────────────────────────
+mkdir -p "${AXLELORE_INSTALL_DIR}"
+
+# Source code and configs are placed by the filesystem/ layer
+# (build-image.sh copies the repo tree into filesystem/opt/axlelore/)
+
+python3 -m venv "${AXLELORE_VENV_DIR}"
+"${AXLELORE_VENV_DIR}/bin/pip" install --upgrade pip wheel setuptools
+"${AXLELORE_VENV_DIR}/bin/pip" install -e "${AXLELORE_INSTALL_DIR}"
+
+# Pre-cache the embedding model so first boot needs no internet
+"${AXLELORE_VENV_DIR}/bin/python" -c "
+from sentence_transformers import SentenceTransformer
+SentenceTransformer('${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}')
+print('Embedding model cached')
+"
+
+# ──────────────────────────────────────────────
+# 4. Install Ollama
+# ──────────────────────────────────────────────
+curl -fsSL https://ollama.ai/install.sh | sh
+
+# Pull models (Ollama must be running)
+ollama serve &
+OLLAMA_PID=$!
+sleep 5
+
+ollama pull "${OLLAMA_MODEL:-qwen3:1.7b}"
+if [[ "${PULL_FALLBACK:-yes}" == "yes" ]]; then
+    ollama pull "${OLLAMA_FALLBACK_MODEL:-gemma3:1b}"
+fi
+
+kill $OLLAMA_PID 2>/dev/null || true
+wait $OLLAMA_PID 2>/dev/null || true
+
+# ──────────────────────────────────────────────
+# 5. Create data directories
+# ──────────────────────────────────────────────
+mkdir -p "${AXLELORE_DATA_DIR}"/{db,chromadb,logs/{chat,obd2},vehicles}
+
+# Knowledge-pack data is placed by filesystem/ layer into
+# /opt/axlelore/data/chromadb/
+
+# ──────────────────────────────────────────────
+# 6. Production .env
+# ──────────────────────────────────────────────
+cat > "${AXLELORE_INSTALL_DIR}/.env" <<DOTENV
+APP_NAME=AxleLore
+DEBUG=false
+API_HOST=0.0.0.0
+API_PORT=8000
+API_RELOAD=false
+OLLAMA_HOST=http://localhost:11434
+OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3:1.7b}
+OLLAMA_FALLBACK_MODEL=${OLLAMA_FALLBACK_MODEL:-gemma3:1b}
+LLM_TEMPERATURE=0.4
+LLM_MAX_TOKENS=1024
+EMBEDDING_MODEL=${EMBEDDING_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+CHUNK_SIZE=600
+CHUNK_OVERLAP=100
+RETRIEVAL_TOP_K=5
+SIMILARITY_THRESHOLD=0.65
+OBD2_ENABLED=false
+DEFAULT_VEHICLE=${VEHICLE_TYPE:-fzj80}
+LOG_LEVEL=WARNING
+CORS_ORIGINS=["http://localhost:8000"]
+DOTENV
+
+# ──────────────────────────────────────────────
+# 7. Install wifi-connect (captive portal)
+# ──────────────────────────────────────────────
+WIFI_CONNECT_TAG="${WIFI_CONNECT_VERSION:-4.11.35}"
+WIFI_CONNECT_URL="https://github.com/balena-os/wifi-connect/releases/download/v${WIFI_CONNECT_TAG}/wifi-connect-v${WIFI_CONNECT_TAG}-linux-aarch64.tar.gz"
+
+mkdir -p /opt/wifi-connect
+wget -qO- "${WIFI_CONNECT_URL}" | tar xz -C /opt/wifi-connect
+
+# ──────────────────────────────────────────────
+# 8. Install systemd units
+# ──────────────────────────────────────────────
+
+# --- AxleLore main service ---
+cat > /etc/systemd/system/axlelore.service <<'UNIT'
+[Unit]
+Description=AxleLore Vehicle Assistant
+After=network-online.target ollama.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=axlelore
+WorkingDirectory=/opt/axlelore
+Environment="PYTHONPATH=/opt/axlelore/src"
+Environment="PATH=/opt/axlelore/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/opt/axlelore/.venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --log-level warning
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+# --- First-boot provisioning ---
+cat > /etc/systemd/system/axlelore-firstboot.service <<'UNIT'
+[Unit]
+Description=AxleLore First-Boot Provisioning
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/axlelore/.provisioned
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/opt/axlelore/bin/first-boot.sh
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+# --- WiFi-Connect captive portal (first boot only) ---
+cat > /etc/systemd/system/axlelore-wifi-setup.service <<'UNIT'
+[Unit]
+Description=AxleLore WiFi Setup (Captive Portal)
+Before=axlelore-firstboot.service
+ConditionPathExists=!/var/lib/axlelore/.wifi-configured
+
+[Service]
+Type=simple
+User=root
+Environment="PORTAL_SSID=AxleLore-Setup"
+Environment="PORTAL_GATEWAY=192.168.42.1"
+ExecStart=/opt/wifi-connect/wifi-connect -s ${PORTAL_SSID} -g ${PORTAL_GATEWAY}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+# --- Update-check timer ---
+cat > /etc/systemd/system/axlelore-update.service <<'UNIT'
+[Unit]
+Description=AxleLore Knowledge Pack Update Check
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=axlelore
+ExecStart=/opt/axlelore/bin/check-update.sh
+StandardOutput=journal
+StandardError=journal
+UNIT
+
+cat > /etc/systemd/system/axlelore-update.timer <<'UNIT'
+[Unit]
+Description=Check for AxleLore knowledge-pack updates every 6 hours
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=6h
+RandomizedDelaySec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+UNIT
+
+# Enable services
+systemctl enable axlelore.service
+systemctl enable axlelore-firstboot.service
+systemctl enable axlelore-wifi-setup.service
+systemctl enable axlelore-update.timer
+
+# Install NetworkManager dispatcher — trigger update check on Wi-Fi connect
+cat > /etc/NetworkManager/dispatcher.d/50-axlelore-update <<'DISPATCH'
+#!/bin/bash
+# Trigger an update check whenever Wi-Fi connects
+IFACE="$1"
+ACTION="$2"
+if [[ "$ACTION" == "up" && "$IFACE" == wlan* ]]; then
+    systemctl start --no-block axlelore-update.service
+fi
+DISPATCH
+chmod +x /etc/NetworkManager/dispatcher.d/50-axlelore-update
+
+# ──────────────────────────────────────────────
+# 9. Set ownership
+# ──────────────────────────────────────────────
+chown -R "${AXLELORE_USER}:${AXLELORE_USER}" "${AXLELORE_INSTALL_DIR}"
+mkdir -p /var/lib/axlelore
+chown "${AXLELORE_USER}:${AXLELORE_USER}" /var/lib/axlelore
+
+# ──────────────────────────────────────────────
+# 10. Hostname
+# ──────────────────────────────────────────────
+echo "axlelore" > /etc/hostname
+sed -i 's/127\.0\.1\.1.*/127.0.1.1\taxlelore/' /etc/hosts
+
+echo ">>> AxleLore chroot_script: complete"

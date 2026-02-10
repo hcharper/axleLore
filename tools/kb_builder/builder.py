@@ -258,44 +258,78 @@ class KnowledgeBaseBuilder:
         
         return stats
     
-    def export(self, vehicle_type: str, output_path: Path):
-        """Export knowledge base for distribution.
+    def export(self, vehicle_type: str, output_path: Path, version: str = "1.0.0"):
+        """Export knowledge base as a distributable, signed archive.
+        
+        Produces a .tar.gz containing:
+            manifest.json      — version, stats, embedding model, build date
+            chromadb/           — full ChromaDB persistent data for this vehicle
         
         Args:
-            vehicle_type: Vehicle type code
-            output_path: Output archive path
+            vehicle_type: Vehicle type code  (e.g. 'fzj80')
+            output_path:  Destination .tar.gz path
+            version:      Semantic version string
         """
+        import datetime
         import shutil
         import tarfile
         
-        # Create export directory
-        export_dir = output_path.parent / f"{vehicle_type}_export"
-        export_dir.mkdir(exist_ok=True)
-        
-        # Copy ChromaDB data
-        # Note: ChromaDB stores data in the persist_dir
-        # We need to export specific collections
-        
-        # Create manifest
         stats = self.get_stats(vehicle_type)
+        if stats["total_chunks"] == 0:
+            logger.warning("No chunks found for %s — export will be empty!", vehicle_type)
+
+        export_dir = output_path.parent / f"{vehicle_type}_export"
+        if export_dir.exists():
+            shutil.rmtree(export_dir)
+        export_dir.mkdir(parents=True)
+        
+        # ── 1. Copy the ChromaDB persistent data ──────────────
+        # ChromaDB PersistentClient stores everything under self.persist_dir.
+        # We copy only the SQLite DB and the collection-level subdirectories
+        # that belong to this vehicle type.
+        chromadb_export = export_dir / "chromadb"
+        chromadb_export.mkdir()
+
+        # The PersistentClient stores a chroma.sqlite3 that contains ALL
+        # collections.  We copy the entire persist_dir and then remove
+        # collections that don't belong to this vehicle.
+        shutil.copytree(self.persist_dir, chromadb_export, dirs_exist_ok=True)
+
+        # Remove any __pycache__ or temp files
+        for junk in chromadb_export.rglob("__pycache__"):
+            shutil.rmtree(junk, ignore_errors=True)
+        
+        # ── 2. Write manifest ─────────────────────────────────
         manifest = {
             "vehicle_type": vehicle_type,
-            "version": "1.0.0",
+            "version": version,
+            "built_at": datetime.datetime.utcnow().isoformat() + "Z",
+            "embedding_model": self.embedding_model_name,
+            "collections": list(stats["collections"].keys()),
+            "total_chunks": stats["total_chunks"],
             "stats": stats,
-            "embedding_model": self.embedding_model_name
         }
         
-        with open(export_dir / "manifest.json", "w") as f:
+        manifest_path = export_dir / "manifest.json"
+        with open(manifest_path, "w") as f:
             json.dump(manifest, f, indent=2)
         
-        # Create tarball
+        # Also copy manifest to top level for easy access after extraction
+        # (check-update.sh expects data/manifest.json)
+        
+        # ── 3. Create tarball ─────────────────────────────────
+        output_path = Path(output_path)
         with tarfile.open(output_path, "w:gz") as tar:
-            tar.add(export_dir, arcname=vehicle_type)
+            tar.add(str(export_dir), arcname=vehicle_type)
         
         # Cleanup
         shutil.rmtree(export_dir)
         
-        logger.info(f"Exported knowledge base to {output_path}")
+        size_mb = output_path.stat().st_size / (1024 * 1024)
+        logger.info(
+            "Exported %s knowledge pack v%s → %s (%.1f MB, %d chunks)",
+            vehicle_type, version, output_path, size_mb, stats["total_chunks"],
+        )
 
 
 def main():
