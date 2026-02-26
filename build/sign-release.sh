@@ -3,7 +3,7 @@
 #
 # Usage:
 #   ./sign-release.sh <file>
-#   GPG_KEY_ID=ABC123 ./sign-release.sh axlelore-fzj80-0.2.0.img.gz
+#   GPG_KEY_ID=ABC123 ./sign-release.sh rigsherpa-fzj80-0.2.0.img.gz
 set -euo pipefail
 
 FILE="${1:?Usage: $0 <file>}"

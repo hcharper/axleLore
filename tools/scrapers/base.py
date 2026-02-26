@@ -1,4 +1,4 @@
-"""Base scraper class for AxleLore data collection."""
+"""Base scraper class for RigSherpa data collection."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
@@ -88,7 +88,7 @@ class BaseScraper(ABC):
             timeout=self.timeout,
             follow_redirects=True,
             headers={
-                "User-Agent": "AxleLore/1.0 (Educational automotive knowledge collection)"
+                "User-Agent": "RigSherpa/1.0 (Educational automotive knowledge collection)"
             }
         )
         return self

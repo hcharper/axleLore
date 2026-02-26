@@ -1,4 +1,4 @@
-"""RAG (Retrieval-Augmented Generation) service for AxleLore.
+"""RAG (Retrieval-Augmented Generation) service for RigSherpa.
 
 Manages ChromaDB vector search, embedding, context assembly, and source
 citation formatting for the Qwen3 1.7B model on a Pi 5 (8 GB).

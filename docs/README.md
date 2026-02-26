@@ -1,10 +1,10 @@
-# AxleLore - Your Local Vehicle Intelligence Assistant
+# RigSherpa - Your Local Vehicle Intelligence Assistant
 
 > **"Every wrench turn, every warning light, every mod - answered offline."**
 
 ## Vision
 
-AxleLore is a local-first, privacy-focused LLM-powered vehicle assistant designed to run on affordable hardware like the Raspberry Pi. It provides instant access to vehicle-specific knowledge including factory service manuals, enthusiast forum wisdom, aftermarket modification guides, and your personal service history - all without requiring an internet connection.
+RigSherpa is a local-first, privacy-focused LLM-powered vehicle assistant designed to run on affordable hardware like the Raspberry Pi. It provides instant access to vehicle-specific knowledge including factory service manuals, enthusiast forum wisdom, aftermarket modification guides, and your personal service history - all without requiring an internet connection.
 
 ## The Problem
 
@@ -53,7 +53,7 @@ Why this vehicle:
 
 ### 2. Pre-Loaded Hardware ($299-499)
 - Raspberry Pi 5 (8GB) pre-configured
-- SD card with OS and AxleLore
+- SD card with OS and RigSherpa
 - OBD2 adapter included
 - Ready to plug and play
 
@@ -69,7 +69,7 @@ Why this vehicle:
 |-----------|------------|-----------|
 | Hardware | Raspberry Pi 5 (8GB) | Affordable, available, sufficient for quantized models |
 | LLM Runtime | Ollama | Easy deployment, quantized model support |
-| Base Model | Mistral 7B (Q4_K_M) | Good performance at small size |
+| Base Model | Qwen3 1.7B | Good performance at small size, fits Pi 5 8GB |
 | Vector DB | ChromaDB | Lightweight, local, fast |
 | Embeddings | all-MiniLM-L6-v2 | Fast, accurate, runs on Pi |
 | Backend | FastAPI (Python) | Async, modern, good ecosystem |
@@ -97,20 +97,6 @@ Why this vehicle:
 - [ ] Optional cloud sync
 - [ ] Community knowledge sharing
 - [ ] Modification tracking with impacts
-
-## Name Considerations
-
-**AxleLore** - Current favorite
-- Combines "Axle" (automotive) with "Lore" (accumulated knowledge/wisdom)
-- Memorable, available domain likely available
-- Works well as brand
-
-**Alternatives to consider:**
-- WrenchWise
-- GarageGPT
-- ShopTalk AI
-- MechanicMind
-- TorqueTalk
 
 ## License
 

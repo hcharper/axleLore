@@ -10,7 +10,7 @@ export default function ConnectionStatus({ connected, host }: Props) {
     <View style={styles.container}>
       <View style={[styles.dot, connected ? styles.dotGreen : styles.dotRed]} />
       <Text style={styles.text}>
-        {connected ? `Connected to ${host || 'AxleLore'}` : 'Disconnected'}
+        {connected ? `Connected to ${host || 'RigSherpa'}` : 'Disconnected'}
       </Text>
     </View>
   );

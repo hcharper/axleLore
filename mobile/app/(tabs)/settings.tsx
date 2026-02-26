@@ -89,7 +89,7 @@ export default function SettingsScreen() {
           style={styles.input}
           value={baseUrl}
           onChangeText={setBaseUrlState}
-          placeholder="http://axlelore.local:8000"
+          placeholder="http://rigsherpa.local:8000"
           placeholderTextColor={THEME.muted}
           autoCapitalize="none"
           autoCorrect={false}

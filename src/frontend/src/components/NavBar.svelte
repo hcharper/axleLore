@@ -12,7 +12,7 @@
 
 <nav class="navbar">
 	<div class="brand">
-		<span class="brand-name">AxleLore</span>
+		<span class="brand-name">RigSherpa</span>
 		<span class="brand-tag">FZJ80</span>
 	</div>
 	<div class="nav-links">

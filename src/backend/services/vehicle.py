@@ -1,4 +1,4 @@
-"""Vehicle management service for AxleLore.
+"""Vehicle management service for RigSherpa.
 
 Loads vehicle YAML configs, queries the database for owner-specific data
 (service records, mods, mileage), and assembles the RAG vehicle-context

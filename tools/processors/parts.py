@@ -1,4 +1,4 @@
-"""Parts catalog normalizer for AxleLore.
+"""Parts catalog normalizer for RigSherpa.
 
 Reads raw SOR JSON from data/raw/sor/ and produces data/fzj80_parts.jsonl
 for the knowledge-base builder.
@@ -103,7 +103,7 @@ def process_parts(
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    parser = argparse.ArgumentParser(description="Normalize SOR parts data into JSONL for AxleLore KB")
+    parser = argparse.ArgumentParser(description="Normalize SOR parts data into JSONL for RigSherpa KB")
     parser.add_argument("--input", type=Path, default=Path("data/raw/sor"), help="Raw SOR data directory")
     parser.add_argument("--output", type=Path, default=None, help="Output JSONL path")
     args = parser.parse_args()

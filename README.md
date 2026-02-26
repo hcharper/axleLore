@@ -1,4 +1,4 @@
-# AxleLore
+# RigSherpa
 
 > Local LLM-powered vehicle assistant for Raspberry Pi
 
@@ -16,8 +16,8 @@
 
 ```bash
 # Clone repository
-git clone https://github.com/axlelore/axlelore.git
-cd axlelore
+git clone https://github.com/harperWebServicesLLC/rigSherpa.git
+cd rigSherpa
 
 # Create virtual environment
 python -m venv .venv

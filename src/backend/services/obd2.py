@@ -1,4 +1,4 @@
-"""OBD2 service for AxleLore.
+"""OBD2 service for RigSherpa.
 
 Manages Bluetooth/serial OBD2 adapter connections, DTC reading, live
 sensor data, and freeze-frame capture.  Uses the python-OBD library.

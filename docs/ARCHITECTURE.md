@@ -1,8 +1,8 @@
-# AxleLore System Architecture
+# RigSherpa System Architecture
 
 ## Overview
 
-AxleLore follows a modular, layered architecture designed for resource-constrained environments (Raspberry Pi) while maintaining extensibility for future features.
+RigSherpa follows a modular, layered architecture designed for resource-constrained environments (Raspberry Pi) while maintaining extensibility for future features.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
@@ -122,7 +122,7 @@ The Retrieval-Augmented Generation pipeline is the core intelligence layer.
 │  ┌──────────────────┐    ┌──────────────────┐    ┌──────────────────┐   │
 │  │  Prompt          │    │  LLM             │    │  Response        │   │
 │  │  Assembly        │───▶│  Generation      │───▶│  Post-Process    │   │
-│  │  (System+User)   │    │  (Ollama/Mistral)│    │  (Citations)     │   │
+│  │  (System+User)   │    │  (Ollama/Qwen3) │    │  (Citations)     │   │
 │  └──────────────────┘    └──────────────────┘    └──────────────────┘   │
 │                                                           │              │
 │                                                           ▼              │
@@ -145,7 +145,7 @@ The Retrieval-Augmented Generation pipeline is the core intelligence layer.
 
 **Prompt Assembly**:
 ```python
-SYSTEM_PROMPT = """You are AxleLore, an expert automotive assistant 
+SYSTEM_PROMPT = """You are RigSherpa, an expert automotive assistant 
 specializing in the {vehicle_type}. You have access to:
 - Factory Service Manual (FSM)
 - Technical Service Bulletins (TSBs)
@@ -272,7 +272,7 @@ chromadb/
 │                      RUNTIME DATA FLOW                                   │
 │                                                                          │
 │  ┌─────────────┐         ┌─────────────┐         ┌─────────────┐        │
-│  │   User      │         │   AxleLore  │         │  Knowledge  │        │
+│  │   User      │         │   RigSherpa  │         │  Knowledge  │        │
 │  │   Query     │────────▶│   Backend   │────────▶│   Base      │        │
 │  └─────────────┘         └─────────────┘         └─────────────┘        │
 │        │                       │                        │                │
@@ -294,7 +294,7 @@ chromadb/
 ## Directory Structure
 
 ```
-axlelore/
+rigsherpa/
 ├── pyproject.toml              # Project configuration
 ├── requirements.txt            # Dependencies (generated)
 ├── README.md                   # Quick start guide
@@ -314,7 +314,7 @@ axlelore/
 │
 ├── data/                       # Runtime data (gitignored)
 │   ├── db/                     # SQLite databases
-│   │   └── axlelore.db
+│   │   └── rigsherpa.db
 │   ├── chromadb/               # Vector store
 │   ├── logs/                   # Application logs
 │   │   ├── chat/               # Chat logs

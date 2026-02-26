@@ -17,7 +17,7 @@ from backend.core.config import settings
 router = APIRouter(prefix="/system", tags=["system"])
 logger = logging.getLogger(__name__)
 
-_STATE_DIR = Path("/var/lib/axlelore")
+_STATE_DIR = Path("/var/lib/rigsherpa")
 
 
 def _read_file(path: Path, default: str = "") -> str:
@@ -43,7 +43,7 @@ async def device_info():
 
     return {
         "device_id": device_id,
-        "hostname": _read_file(Path("/etc/hostname"), "axlelore"),
+        "hostname": _read_file(Path("/etc/hostname"), "rigsherpa"),
         "hardware": hardware,
         "provisioned": provisioned,
         "wifi_configured": wifi_configured,
@@ -88,7 +88,7 @@ async def update_status():
 
     try:
         result = subprocess.run(
-            ["journalctl", "-t", "axlelore-update", "-n", "5", "--no-pager", "-o", "short-iso"],
+            ["journalctl", "-t", "rigsherpa-update", "-n", "5", "--no-pager", "-o", "short-iso"],
             capture_output=True,
             text=True,
             timeout=5,

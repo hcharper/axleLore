@@ -1,5 +1,5 @@
 #!/bin/bash
-# Start AxleLore services
+# Start RigSherpa services
 
 set -e
 
@@ -23,7 +23,7 @@ if ! pgrep -x "ollama" > /dev/null; then
     sleep 3
 fi
 
-# Start AxleLore
+# Start RigSherpa
 export PYTHONPATH="${PROJECT_DIR}/src"
-echo "Starting AxleLore..."
+echo "Starting RigSherpa..."
 python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --log-level info

@@ -1,8 +1,8 @@
-# AxleLore Vehicle Schema
+# RigSherpa Vehicle Schema
 
 ## Overview
 
-This document defines the vehicle configuration schema used across AxleLore. The schema enables multi-vehicle support while maintaining vehicle-specific accuracy.
+This document defines the vehicle configuration schema used across RigSherpa. The schema enables multi-vehicle support while maintaining vehicle-specific accuracy.
 
 ---
 

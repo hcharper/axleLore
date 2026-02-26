@@ -1,4 +1,4 @@
-"""Knowledge base builder for AxleLore."""
+"""Knowledge base builder for RigSherpa."""
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Iterator

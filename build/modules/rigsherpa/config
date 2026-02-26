@@ -1,0 +1,6 @@
+# CustomPiOS module configuration for RigSherpa
+# These variables are available in chroot_script
+export RIGSHERPA_INSTALL_DIR="/opt/rigsherpa"
+export RIGSHERPA_DATA_DIR="/opt/rigsherpa/data"
+export RIGSHERPA_VENV_DIR="/opt/rigsherpa/.venv"
+export RIGSHERPA_USER="rigsherpa"

@@ -1,4 +1,4 @@
-# AxleLore Image Build System
+# RigSherpa Image Build System
 
 Build flashable SD card / NVMe images for each supported vehicle using
 [CustomPiOS](https://github.com/guysoft/CustomPiOS) on top of Raspberry Pi OS
@@ -17,13 +17,13 @@ Lite (arm64, bookworm).
 cd build && git clone https://github.com/guysoft/CustomPiOS.git
 
 # 2.  Build an image for one vehicle
-./build-image.sh fzj80          # produces build/output/axlelore-fzj80-<version>.img.gz
+./build-image.sh fzj80          # produces build/output/rigsherpa-fzj80-<version>.img.gz
 
 # 3.  Sign + checksum
-./sign-release.sh build/output/axlelore-fzj80-*.img.gz
+./sign-release.sh build/output/rigsherpa-fzj80-*.img.gz
 
 # 4.  Upload to R2
-./upload-release.sh build/output/axlelore-fzj80-*
+./upload-release.sh build/output/rigsherpa-fzj80-*
 ```
 
 ## Directory Layout
@@ -38,7 +38,7 @@ build/
 │   ├── base.conf          ← shared defaults
 │   └── fzj80.conf         ← FZJ80-specific overrides
 ├── modules/
-│   └── axlelore/          ← CustomPiOS module
+│   └── rigsherpa/          ← CustomPiOS module
 │       ├── config         ← module config (variables)
 │       ├── filesystem/    ← files copied verbatim into the image
 │       └── chroot_script  ← runs inside the image at build time

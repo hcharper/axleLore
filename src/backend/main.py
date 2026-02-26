@@ -1,4 +1,4 @@
-"""Main FastAPI application for AxleLore backend.
+"""Main FastAPI application for RigSherpa backend.
 
 Targets: Raspberry Pi 5 (8 GB) · Qwen3 1.7B via Ollama · ChromaDB · SQLite
 """

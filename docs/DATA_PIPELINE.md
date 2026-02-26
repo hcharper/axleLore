@@ -1,4 +1,4 @@
-# AxleLore Data Pipeline
+# RigSherpa Data Pipeline
 
 ## Overview
 
@@ -601,7 +601,7 @@ fzj80-knowledge-pack-v1.0.0.tar.gz
         "metadata": "sha256:..."
     },
     "compatibility": {
-        "axlelore_version": ">=0.1.0",
+        "rigsherpa_version": ">=0.1.0",
         "chromadb_version": ">=0.4.0"
     }
 }

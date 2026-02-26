@@ -34,7 +34,7 @@ class TestChatService:
     async def test_generate_mock(self, mock_chat_service):
         resp = await mock_chat_service.generate(
             prompt="What is the oil capacity?",
-            system_prompt="You are AxleLore.",
+            system_prompt="You are RigSherpa.",
         )
         assert resp.content
         assert resp.tokens_used > 0

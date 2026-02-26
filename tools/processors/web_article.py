@@ -1,4 +1,4 @@
-"""Web article normalizer for AxleLore.
+"""Web article normalizer for RigSherpa.
 
 Reads raw article JSON from data/raw/web/ and produces data/fzj80_web.jsonl
 for the knowledge-base builder.
@@ -119,7 +119,7 @@ def process_web_articles(
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    parser = argparse.ArgumentParser(description="Normalize web articles into JSONL for AxleLore KB")
+    parser = argparse.ArgumentParser(description="Normalize web articles into JSONL for RigSherpa KB")
     parser.add_argument("--input", type=Path, default=Path("data/raw/web"), help="Raw web data directory")
     parser.add_argument("--output", type=Path, default=None, help="Output JSONL path")
     args = parser.parse_args()

@@ -40,7 +40,7 @@ export default function Layout() {
           name="(tabs)/chat"
           options={{
             title: 'Chat',
-            headerTitle: 'AxleLore',
+            headerTitle: 'RigSherpa',
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="chatbubble-outline" size={size} color={color} />
             ),

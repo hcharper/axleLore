@@ -18,7 +18,7 @@ class TestSystemEndpoints:
         resp = client.get("/api/info")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["app_name"] == "AxleLore"
+        assert data["app_name"] == "RigSherpa"
         assert "endpoints" in data
         assert "chat_stream" in data["endpoints"]
 

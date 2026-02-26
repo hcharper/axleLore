@@ -1,4 +1,4 @@
-"""Curated web article scraper for AxleLore.
+"""Curated web article scraper for RigSherpa.
 
 Fetches and extracts main content from a hardcoded list of high-value
 FZJ80 technical articles using BeautifulSoup.

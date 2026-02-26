@@ -35,7 +35,7 @@ export default function ChatScreen() {
     {
       id: '0',
       role: 'assistant',
-      content: 'AxleLore online. Ask me anything about your FZJ80 Land Cruiser.',
+      content: 'RigSherpa online. Ask me anything about your FZJ80 Land Cruiser.',
     },
   ]);
   const [input, setInput] = useState('');

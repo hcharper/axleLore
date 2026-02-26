@@ -1,11 +1,11 @@
 #!/bin/bash
-# AxleLore Installation Script
+# RigSherpa Installation Script
 # Targets: Raspberry Pi 5 (8GB) with Raspberry Pi OS 64-bit
 
 set -e
 
 echo "=========================================="
-echo "       AxleLore Installation Script       "
+echo "       RigSherpa Installation Script       "
 echo "=========================================="
 
 # Colors for output
@@ -53,7 +53,7 @@ fi
 echo -e "${GREEN}✓ Disk space: ${AVAILABLE_SPACE}GB available${NC}"
 
 # Create project directory if needed
-PROJECT_DIR="${HOME}/axlelore"
+PROJECT_DIR="${HOME}/rigsherpa"
 if [[ ! -d "$PROJECT_DIR" ]]; then
     echo -e "\n${YELLOW}Creating project directory...${NC}"
     mkdir -p "$PROJECT_DIR"
@@ -71,15 +71,15 @@ echo -e "${GREEN}✓ Virtual environment activated${NC}"
 # Upgrade pip
 pip install --upgrade pip wheel setuptools
 
-# Install AxleLore
-echo -e "\n${YELLOW}Installing AxleLore...${NC}"
+# Install RigSherpa
+echo -e "\n${YELLOW}Installing RigSherpa...${NC}"
 if [[ -f "pyproject.toml" ]]; then
     pip install -e .
 else
     echo -e "${RED}pyproject.toml not found. Please clone the repository first.${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓ AxleLore installed${NC}"
+echo -e "${GREEN}✓ RigSherpa installed${NC}"
 
 # Install Ollama if not present
 echo -e "\n${YELLOW}Checking Ollama installation...${NC}"
@@ -122,16 +122,16 @@ if [[ -f ".env.example" ]] && [[ ! -f ".env" ]]; then
 fi
 
 # Install systemd service (optional)
-echo -e "\n${YELLOW}Do you want to install AxleLore as a system service? (y/n)${NC}"
+echo -e "\n${YELLOW}Do you want to install RigSherpa as a system service? (y/n)${NC}"
 read -r INSTALL_SERVICE
 
 if [[ "$INSTALL_SERVICE" == "y" ]]; then
     echo "Installing systemd service..."
-    sudo cp src/scripts/systemd/axlelore.service /etc/systemd/system/
+    sudo cp src/scripts/systemd/rigsherpa.service /etc/systemd/system/
     sudo systemctl daemon-reload
-    sudo systemctl enable axlelore
+    sudo systemctl enable rigsherpa
     echo -e "${GREEN}✓ Systemd service installed${NC}"
-    echo "  Start with: sudo systemctl start axlelore"
+    echo "  Start with: sudo systemctl start rigsherpa"
 fi
 
 # Final instructions
@@ -139,7 +139,7 @@ echo -e "\n${GREEN}=========================================="
 echo "       Installation Complete!             "
 echo "==========================================${NC}"
 echo ""
-echo "To start AxleLore:"
+echo "To start RigSherpa:"
 echo "  1. Activate the virtual environment:"
 echo "     source ${PROJECT_DIR}/.venv/bin/activate"
 echo ""

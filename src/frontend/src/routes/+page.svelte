@@ -11,7 +11,7 @@
 		if ($chatMessages.length === 0) {
 			chatMessages.set([{
 				role: 'assistant',
-				content: 'AxleLore online. Ask me anything about your FZJ80 Land Cruiser.',
+				content: 'RigSherpa online. Ask me anything about your FZJ80 Land Cruiser.',
 				sources: []
 			}]);
 		}

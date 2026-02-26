@@ -1,4 +1,4 @@
-"""YAML-to-ChromaDB seeder for AxleLore.
+"""YAML-to-ChromaDB seeder for RigSherpa.
 
 Extracts structured data from vehicle YAML configs (specs, torque values,
 fluid capacities, part numbers, common issues, mods) into ChromaDB chunks.

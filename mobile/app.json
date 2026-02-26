@@ -1,25 +1,25 @@
 {
   "expo": {
-    "name": "AxleLore",
-    "slug": "axlelore",
+    "name": "RigSherpa",
+    "slug": "rigsherpa",
     "version": "0.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "scheme": "axlelore",
+    "scheme": "rigsherpa",
     "splash": {
       "backgroundColor": "#0a0e14"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.axlelore.mobile",
+      "bundleIdentifier": "com.rigsherpa.mobile",
       "infoPlist": {
-        "NSLocalNetworkUsageDescription": "AxleLore needs local network access to connect to your Pi",
+        "NSLocalNetworkUsageDescription": "RigSherpa needs local network access to connect to your Pi",
         "NSBonjourServices": ["_http._tcp"]
       }
     },
     "android": {
-      "package": "com.axlelore.mobile",
+      "package": "com.rigsherpa.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#0a0e14"
       }

@@ -1,0 +1,26 @@
+[Unit]
+Description=RigSherpa Vehicle Assistant
+After=network-online.target ollama.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rigsherpa
+WorkingDirectory=/opt/rigsherpa
+Environment="PYTHONPATH=/opt/rigsherpa/src"
+Environment="PATH=/opt/rigsherpa/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/opt/rigsherpa/.venv/bin/python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --log-level warning
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+# Hardening
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/rigsherpa/data /var/lib/rigsherpa
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

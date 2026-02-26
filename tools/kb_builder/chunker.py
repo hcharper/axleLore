@@ -1,4 +1,4 @@
-"""Smart document chunker for AxleLore."""
+"""Smart document chunker for RigSherpa."""
 from dataclasses import dataclass
 from typing import Optional
 import re

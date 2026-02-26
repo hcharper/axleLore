@@ -1,4 +1,4 @@
-# AxleLore MVP Roadmap
+# RigSherpa MVP Roadmap
 
 ## Overview
 
@@ -18,7 +18,7 @@ This roadmap outlines the development path from initial prototype to market-read
 
 ---
 
-## Phase 0: Foundation (Weeks 1-2) ✅ IN PROGRESS
+## Phase 0: Foundation (Weeks 1-2) ✅ COMPLETED
 
 ### Goals
 - Project structure and tooling
@@ -47,20 +47,20 @@ This roadmap outlines the development path from initial prototype to market-read
 - [x] Health check endpoint
 - [ ] Basic logging setup
 
-#### 0.4 Ollama Integration
-- [ ] Ollama installation script
-- [ ] Model download script (mistral:7b-instruct-q4_K_M)
-- [ ] Basic Ollama client wrapper
-- [ ] Connection health check
+#### 0.4 Ollama Integration ✅
+- [x] Ollama installation script
+- [x] Model download script (qwen3:1.7b)
+- [x] Basic Ollama client wrapper
+- [x] Connection health check
 
 ### Deliverables
 - Working FastAPI server
-- Ollama running with Mistral model
+- Ollama running with Qwen3 1.7B model
 - Development environment documented
 
 ---
 
-## Phase 1: Data Pipeline (Weeks 3-5)
+## Phase 1: Data Pipeline (Weeks 3-5) ✅ COMPLETED
 
 ### Goals
 - Collect FZJ80 knowledge from multiple sources
@@ -157,12 +157,12 @@ This roadmap outlines the development path from initial prototype to market-read
 ### Example Interactions
 ```
 User: "What's the torque spec for the front axle knuckle bolts?"
-AxleLore: "The front axle knuckle bolts (part #90105-12220) should be 
+RigSherpa: "The front axle knuckle bolts (part #90105-12220) should be 
 torqued to 80 ft-lbs (108 Nm) per the FSM. Apply blue threadlocker.
 [Source: FSM Section AX-12, IH8MUD Birfield Rebuild Guide]"
 
 User: "My truck is making a clicking noise when turning"
-AxleLore: "Clicking when turning on an FZJ80 is typically one of:
+RigSherpa: "Clicking when turning on an FZJ80 is typically one of:
 1. Worn CV joints/birfields (most common) - check for torn boots
 2. Wheel bearing play - jack up and check for movement
 3. Brake pad wear indicator
@@ -266,7 +266,7 @@ labor-intensive but well-documented. [Source: IH8MUD Birfield FAQ]"
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  🚙 AxleLore              [FZJ80 "Betsy" ▼]    [⚙️]         │
+│  🚙 RigSherpa              [FZJ80 "Betsy" ▼]    [⚙️]         │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  ┌─────────────────────────────────────────────────────┐   │
@@ -321,7 +321,7 @@ labor-intensive but well-documented. [Source: IH8MUD Birfield FAQ]"
 - [ ] Service configuration
 
 #### 5.3 Systemd Services
-- [ ] axlelore.service (FastAPI)
+- [ ] rigsherpa.service (FastAPI)
 - [ ] ollama.service (if not system)
 - [ ] Auto-start on boot
 - [ ] Watchdog for reliability

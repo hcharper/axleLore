@@ -2,7 +2,7 @@
 # check-update.sh — Check for and apply knowledge-pack updates.
 #
 # Called by:
-#   - axlelore-update.timer  (every 6 hours)
+#   - rigsherpa-update.timer  (every 6 hours)
 #   - NetworkManager dispatcher (on Wi-Fi connect)
 #
 # Flow:
@@ -10,16 +10,16 @@
 #   2. POST device info → GET update metadata
 #   3. If newer version available, download signed .tar.gz
 #   4. Verify GPG signature
-#   5. Extract atomically into /opt/axlelore/data/chromadb/
-#   6. Restart axlelore.service to reload ChromaDB
+#   5. Extract atomically into /opt/rigsherpa/data/chromadb/
+#   6. Restart rigsherpa.service to reload ChromaDB
 #   7. Report success to server
 set -euo pipefail
 
-INSTALL_DIR="/opt/axlelore"
-STATE_DIR="/var/lib/axlelore"
+INSTALL_DIR="/opt/rigsherpa"
+STATE_DIR="/var/lib/rigsherpa"
 DATA_DIR="${INSTALL_DIR}/data"
-LOG_TAG="axlelore-update"
-LOCK_FILE="/tmp/axlelore-update.lock"
+LOG_TAG="rigsherpa-update"
+LOCK_FILE="/tmp/rigsherpa-update.lock"
 
 log()  { logger -t "$LOG_TAG" "$*"; }
 warn() { logger -t "$LOG_TAG" -p user.warning "$*"; }
@@ -44,7 +44,7 @@ if [[ -f "${DATA_DIR}/manifest.json" ]]; then
     KB_VERSION="$(python3 -c "import json; print(json.load(open('${DATA_DIR}/manifest.json'))['version'])" 2>/dev/null || echo "0.0.0")"
 fi
 
-UPDATE_BASE_URL="$(grep -oP '^UPDATE_BASE_URL=\K.*' "${INSTALL_DIR}/.env" 2>/dev/null || echo "https://api.axlelore.com")"
+UPDATE_BASE_URL="$(grep -oP '^UPDATE_BASE_URL=\K.*' "${INSTALL_DIR}/.env" 2>/dev/null || echo "https://api.rigsherpa.com")"
 
 # ── Pre-flight: are we online? ───────────────
 if ! curl -sf --connect-timeout 5 --max-time 10 "${UPDATE_BASE_URL}/health" >/dev/null 2>&1; then
@@ -55,7 +55,7 @@ fi
 # ── If we never registered, try now ──────────
 if [[ -z "$API_TOKEN" && -n "$DEVICE_ID" ]]; then
     log "No API token found. Attempting registration..."
-    /opt/axlelore/bin/first-boot.sh 2>/dev/null || true
+    /opt/rigsherpa/bin/first-boot.sh 2>/dev/null || true
     [[ -f "${STATE_DIR}/.token" ]] && API_TOKEN="$(cat "${STATE_DIR}/.token")"
 fi
 
@@ -96,7 +96,7 @@ DOWNLOAD_URL=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(s
 log "Update available: ${KB_VERSION} → ${NEW_VERSION}"
 
 # ── Download update ──────────────────────────
-TMPDIR=$(mktemp -d /tmp/axlelore-update-XXXXXX)
+TMPDIR=$(mktemp -d /tmp/rigsherpa-update-XXXXXX)
 trap 'rm -rf "$TMPDIR"' EXIT
 
 PACK_FILE="${TMPDIR}/knowledge-pack.tar.gz"
@@ -117,7 +117,7 @@ curl -fsSL --connect-timeout 10 --max-time 30 \
     -o "$PACK_SIG" "$SIG_URL" 2>/dev/null || true
 
 # ── Verify GPG signature ────────────────────
-GPG_PUBKEY="${INSTALL_DIR}/axlelore-release.asc"
+GPG_PUBKEY="${INSTALL_DIR}/rigsherpa-release.asc"
 if [[ -f "$PACK_SIG" && -f "$GPG_PUBKEY" ]]; then
     log "Verifying GPG signature..."
     GNUPGHOME=$(mktemp -d)
@@ -163,7 +163,7 @@ BACKUP="${DATA_DIR}/chromadb_backup"
 rm -rf "$BACKUP"
 
 # Stop the service briefly for a clean swap
-systemctl stop axlelore.service 2>/dev/null || true
+systemctl stop rigsherpa.service 2>/dev/null || true
 
 if [[ -d "${DATA_DIR}/chromadb" ]]; then
     mv "${DATA_DIR}/chromadb" "$BACKUP"
@@ -181,10 +181,10 @@ fi
 [[ -f "${STAGING}/manifest.json" ]] && cp "${STAGING}/manifest.json" "${DATA_DIR}/manifest.json" 2>/dev/null || true
 
 # Fix ownership
-chown -R axlelore:axlelore "${DATA_DIR}/chromadb" 2>/dev/null || true
+chown -R rigsherpa:rigsherpa "${DATA_DIR}/chromadb" 2>/dev/null || true
 
 # Restart the service
-systemctl start axlelore.service
+systemctl start rigsherpa.service
 
 log "Knowledge pack updated to v${NEW_VERSION}"
 

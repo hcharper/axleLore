@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# build-image.sh — Build a flashable AxleLore SD-card image for a vehicle.
+# build-image.sh — Build a flashable RigSherpa SD-card image for a vehicle.
 #
 # Usage:
 #   ./build-image.sh <vehicle_type>         # e.g. ./build-image.sh fzj80
@@ -36,9 +36,9 @@ source "$SCRIPT_DIR/config/base.conf"
 source "$VEHICLE_CONF"
 
 echo "=========================================="
-echo "  AxleLore Image Builder"
+echo "  RigSherpa Image Builder"
 echo "  Vehicle: ${VEHICLE_NAME} (${VEHICLE_TYPE})"
-echo "  Version: ${AXLELORE_VERSION}"
+echo "  Version: ${RIGSHERPA_VERSION}"
 echo "=========================================="
 
 # ── pre-flight checks ────────────────────────
@@ -62,36 +62,36 @@ if [[ ! -f "$VEHICLE_KEYWORDS" ]]; then
 fi
 
 # ── prepare filesystem layer ─────────────────
-# CustomPiOS copies everything under modules/axlelore/filesystem/
+# CustomPiOS copies everything under modules/rigsherpa/filesystem/
 # into the image root filesystem verbatim.
-FS_DIR="$SCRIPT_DIR/modules/axlelore/filesystem"
+FS_DIR="$SCRIPT_DIR/modules/rigsherpa/filesystem"
 rm -rf "$FS_DIR"
-mkdir -p "$FS_DIR/opt/axlelore"
+mkdir -p "$FS_DIR/opt/rigsherpa"
 
 echo "Copying application source..."
 # Copy app code, configs, bins (exclude dev/build artefacts)
 rsync -a --exclude='.venv' --exclude='.git' --exclude='__pycache__' \
     --exclude='*.pyc' --exclude='build/' --exclude='data/' \
     --exclude='.env' --exclude='node_modules' \
-    "$ROOT_DIR/" "$FS_DIR/opt/axlelore/"
+    "$ROOT_DIR/" "$FS_DIR/opt/rigsherpa/"
 
 echo "Copying vehicle config..."
-mkdir -p "$FS_DIR/opt/axlelore/config/vehicles"
-cp "$VEHICLE_YAML" "$FS_DIR/opt/axlelore/config/vehicles/"
-[[ -f "$VEHICLE_KEYWORDS" ]] && cp "$VEHICLE_KEYWORDS" "$FS_DIR/opt/axlelore/config/vehicles/"
+mkdir -p "$FS_DIR/opt/rigsherpa/config/vehicles"
+cp "$VEHICLE_YAML" "$FS_DIR/opt/rigsherpa/config/vehicles/"
+[[ -f "$VEHICLE_KEYWORDS" ]] && cp "$VEHICLE_KEYWORDS" "$FS_DIR/opt/rigsherpa/config/vehicles/"
 
 echo "Copying knowledge pack..."
-mkdir -p "$FS_DIR/opt/axlelore/data"
+mkdir -p "$FS_DIR/opt/rigsherpa/data"
 if [[ -d "$KNOWLEDGE_PACK/chromadb" ]]; then
-    cp -r "$KNOWLEDGE_PACK/chromadb" "$FS_DIR/opt/axlelore/data/chromadb"
+    cp -r "$KNOWLEDGE_PACK/chromadb" "$FS_DIR/opt/rigsherpa/data/chromadb"
 fi
 if [[ -f "$KNOWLEDGE_PACK/manifest.json" ]]; then
-    cp "$KNOWLEDGE_PACK/manifest.json" "$FS_DIR/opt/axlelore/data/"
+    cp "$KNOWLEDGE_PACK/manifest.json" "$FS_DIR/opt/rigsherpa/data/"
 fi
 
 # Copy GPG public key for update verification
 if [[ -n "${GPG_KEY_ID:-}" ]]; then
-    gpg --export --armor "$GPG_KEY_ID" > "$FS_DIR/opt/axlelore/axlelore-release.asc"
+    gpg --export --armor "$GPG_KEY_ID" > "$FS_DIR/opt/rigsherpa/rigsherpa-release.asc"
 fi
 
 # ── build with CustomPiOS ────────────────────
@@ -102,7 +102,7 @@ if [[ ! -d "$CUSTOMPIOS_DIR" ]]; then
 fi
 
 # Export variables the chroot_script needs
-export VEHICLE_TYPE VEHICLE_NAME AXLELORE_VERSION
+export VEHICLE_TYPE VEHICLE_NAME RIGSHERPA_VERSION
 export OLLAMA_MODEL OLLAMA_FALLBACK_MODEL PULL_FALLBACK
 export EMBEDDING_MODEL
 export WIFI_CONNECT_VERSION
@@ -118,11 +118,11 @@ echo ""
 pushd "$CUSTOMPIOS_DIR/src" > /dev/null
 
 # Link our module into the CustomPiOS workspace
-ln -sfn "$SCRIPT_DIR/modules/axlelore" modules/axlelore
+ln -sfn "$SCRIPT_DIR/modules/rigsherpa" modules/rigsherpa
 
 # Create the build config
 cat > config <<BUILDCFG
-export MODULES="base(axlelore)"
+export MODULES="base(rigsherpa)"
 export BASE_ARCH="arm64"
 BUILDCFG
 
@@ -131,7 +131,7 @@ popd > /dev/null
 
 # ── collect output ───────────────────────────
 TIMESTAMP="$(date +%Y%m%d)"
-OUTPUT_NAME="axlelore-${VEHICLE_TYPE}-${AXLELORE_VERSION}-${TIMESTAMP}"
+OUTPUT_NAME="rigsherpa-${VEHICLE_TYPE}-${RIGSHERPA_VERSION}-${TIMESTAMP}"
 
 # CustomPiOS places images in src/workspace/
 BUILT_IMAGE=$(find "$CUSTOMPIOS_DIR/src/workspace/" -name '*.img' -type f | head -1)

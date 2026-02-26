@@ -1,4 +1,4 @@
-"""IH8MUD forum scraper for AxleLore.
+"""IH8MUD forum scraper for RigSherpa.
 
 Two-pass architecture:
   Pass 1 (index):  Crawl listing pages, extract thread URLs + metadata

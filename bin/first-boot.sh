@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# first-boot.sh — Runs once on the very first boot of an AxleLore device.
+# first-boot.sh — Runs once on the very first boot of an RigSherpa device.
 #
 # Handles:
 #   1. Filesystem expansion (Pi OS usually does this, but we ensure it)
@@ -8,13 +8,13 @@
 #   4. Mark Wi-Fi as configured (wifi-connect will have already run)
 #   5. Mark provisioning as complete so this never runs again
 #
-# Called by: axlelore-firstboot.service (systemd oneshot)
-# Guard:    ConditionPathExists=!/var/lib/axlelore/.provisioned
+# Called by: rigsherpa-firstboot.service (systemd oneshot)
+# Guard:    ConditionPathExists=!/var/lib/rigsherpa/.provisioned
 set -euo pipefail
 
-INSTALL_DIR="/opt/axlelore"
-STATE_DIR="/var/lib/axlelore"
-LOG_TAG="axlelore-firstboot"
+INSTALL_DIR="/opt/rigsherpa"
+STATE_DIR="/var/lib/rigsherpa"
+LOG_TAG="rigsherpa-firstboot"
 
 log() { logger -t "$LOG_TAG" "$*"; echo "[first-boot] $*"; }
 
@@ -35,7 +35,7 @@ if [[ -f /proc/device-tree/serial-number ]]; then
 fi
 
 SHORT_SERIAL="${PI_SERIAL: -6}"
-NEW_HOSTNAME="axlelore-${SHORT_SERIAL}"
+NEW_HOSTNAME="rigsherpa-${SHORT_SERIAL}"
 log "Setting hostname to ${NEW_HOSTNAME}"
 hostnamectl set-hostname "$NEW_HOSTNAME" 2>/dev/null || {
     echo "$NEW_HOSTNAME" > /etc/hostname
@@ -68,7 +68,7 @@ fi
 # ──────────────────────────────────────────────
 # 4. Register with update server (best-effort)
 # ──────────────────────────────────────────────
-UPDATE_BASE_URL="$(grep -oP '^UPDATE_BASE_URL=\K.*' "${INSTALL_DIR}/.env" 2>/dev/null || echo "https://api.axlelore.com")"
+UPDATE_BASE_URL="$(grep -oP '^UPDATE_BASE_URL=\K.*' "${INSTALL_DIR}/.env" 2>/dev/null || echo "https://api.rigsherpa.com")"
 
 log "Attempting device registration..."
 REGISTRATION_PAYLOAD=$(cat <<JSON
@@ -110,8 +110,8 @@ fi
 # If we got this far, networking is up (either wifi-connect ran, or ethernet).
 # Stop the wifi-connect service and prevent future runs.
 touch "${STATE_DIR}/.wifi-configured"
-systemctl stop axlelore-wifi-setup.service 2>/dev/null || true
-systemctl disable axlelore-wifi-setup.service 2>/dev/null || true
+systemctl stop rigsherpa-wifi-setup.service 2>/dev/null || true
+systemctl disable rigsherpa-wifi-setup.service 2>/dev/null || true
 
 # ──────────────────────────────────────────────
 # 6. Mark provisioning as complete
@@ -119,5 +119,5 @@ systemctl disable axlelore-wifi-setup.service 2>/dev/null || true
 touch "${STATE_DIR}/.provisioned"
 log "First-boot provisioning complete"
 
-# Ensure the main axlelore service starts
-systemctl start axlelore.service 2>/dev/null || true
+# Ensure the main rigsherpa service starts
+systemctl start rigsherpa.service 2>/dev/null || true

@@ -1,4 +1,4 @@
-"""Master pipeline orchestrator for AxleLore knowledge-base population.
+"""Master pipeline orchestrator for RigSherpa knowledge-base population.
 
 Runs the full scrape → process → build → export pipeline, or individual stages.
 
@@ -265,7 +265,7 @@ def export_pack() -> Path | None:
 
 def show_status() -> None:
     """Print pipeline status: raw data, JSONL counts, ChromaDB collections."""
-    print(f"=== AxleLore KB Pipeline Status ({VEHICLE}) ===\n")
+    print(f"=== RigSherpa KB Pipeline Status ({VEHICLE}) ===\n")
 
     # Raw data
     print("Raw data (data/raw/):")
@@ -336,7 +336,7 @@ async def _main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     parser = argparse.ArgumentParser(
-        description="AxleLore KB pipeline orchestrator",
+        description="RigSherpa KB pipeline orchestrator",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Commands:

@@ -1,4 +1,4 @@
-"""Forum post normalizer for AxleLore.
+"""Forum post normalizer for RigSherpa.
 
 Normalizes scraped IH8MUD (and other forum) JSON data into
 builder-compatible JSONL.  Filters by quality score, deduplicates,
@@ -297,7 +297,7 @@ def process_forum_directory(
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    parser = argparse.ArgumentParser(description="Normalize forum data into JSONL for AxleLore KB")
+    parser = argparse.ArgumentParser(description="Normalize forum data into JSONL for RigSherpa KB")
     parser.add_argument("input", type=Path, help="JSON file or directory of scraped forum data")
     parser.add_argument("-o", "--output", type=Path, default=None, help="Output JSONL path")
     parser.add_argument("--min-score", type=float, default=0.1, help="Minimum quality score (0.0-1.0)")

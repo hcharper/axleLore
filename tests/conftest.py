@@ -1,4 +1,4 @@
-"""Shared test fixtures for AxleLore.
+"""Shared test fixtures for RigSherpa.
 
 Provides:
 - Mock Ollama (httpx_mock)

@@ -1,4 +1,4 @@
-"""Configuration management for AxleLore.
+"""Configuration management for RigSherpa.
 
 Targets: Raspberry Pi 5 (8GB) with Qwen3 1.7B via Ollama.
 All inference runs locally, fully offline.
@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     """Application settings."""
 
     # Application info
-    app_name: str = "AxleLore"
+    app_name: str = "RigSherpa"
     app_version: str = "0.2.0"
     debug: bool = False
 
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     api_reload: bool = False
 
     # Database (async sqlite)
-    database_url: str = f"sqlite+aiosqlite:///{_PROJECT_ROOT / 'data' / 'db' / 'axlelore.db'}"
+    database_url: str = f"sqlite+aiosqlite:///{_PROJECT_ROOT / 'data' / 'db' / 'rigsherpa.db'}"
 
     # Paths
     project_root: Path = _PROJECT_ROOT
@@ -66,11 +66,11 @@ class Settings(BaseSettings):
     default_vehicle: str = "fzj80"
 
     # Update server (used by check-update.sh and system API)
-    update_base_url: str = "https://api.axlelore.com"
+    update_base_url: str = "https://api.rigsherpa.com"
 
     # Logging
     log_level: str = "INFO"
-    log_file: str = str(_PROJECT_ROOT / "data" / "logs" / "axlelore.log")
+    log_file: str = str(_PROJECT_ROOT / "data" / "logs" / "rigsherpa.log")
 
     # CORS (for development)
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]

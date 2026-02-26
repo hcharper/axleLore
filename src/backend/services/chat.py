@@ -1,4 +1,4 @@
-"""Chat / LLM service for AxleLore.
+"""Chat / LLM service for RigSherpa.
 
 Wraps the Ollama REST API.  System prompt is kept short and structured
 so the 1.7 B-parameter model can follow instructions reliably.
@@ -34,7 +34,7 @@ class LLMResponse:
 # ---------------------------------------------------------------------------
 
 SYSTEM_PROMPT = """\
-You are AxleLore, a technician expert on the {vehicle_name}.
+You are RigSherpa, a technician expert on the {vehicle_name}.
 
 RULES (follow strictly):
 - Answer ONLY from the RETRIEVED KNOWLEDGE below.  If the knowledge does not cover the question, say "I don't have that information."

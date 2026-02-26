@@ -1,4 +1,4 @@
-"""NHTSA API scraper for AxleLore.
+"""NHTSA API scraper for RigSherpa.
 
 Fetches recall and complaint data for the Toyota Land Cruiser (1993-1997)
 from the public NHTSA Vehicle Safety API.

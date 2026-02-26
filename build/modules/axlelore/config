@@ -1,6 +1,0 @@
-# CustomPiOS module configuration for AxleLore
-# These variables are available in chroot_script
-export AXLELORE_INSTALL_DIR="/opt/axlelore"
-export AXLELORE_DATA_DIR="/opt/axlelore/data"
-export AXLELORE_VENV_DIR="/opt/axlelore/.venv"
-export AXLELORE_USER="axlelore"

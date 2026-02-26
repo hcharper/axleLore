@@ -1,12 +1,12 @@
 [project]
-name = "axlelore"
+name = "rigsherpa"
 version = "0.2.0"
 description = "Local LLM-powered vehicle assistant for Raspberry Pi"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
-    { name = "AxleLore Team" }
+    { name = "RigSherpa Team" }
 ]
 keywords = ["automotive", "llm", "raspberry-pi", "obd2", "vehicle-assistant", "rag", "edge-ai"]
 classifiers = [
@@ -59,9 +59,9 @@ build = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/hcharper/axleLore"
-"Bug Reports" = "https://github.com/hcharper/axleLore/issues"
-"Source" = "https://github.com/hcharper/axleLore"
+"Homepage" = "https://github.com/harperWebServicesLLC/rigSherpa"
+"Bug Reports" = "https://github.com/harperWebServicesLLC/rigSherpa/issues"
+"Source" = "https://github.com/harperWebServicesLLC/rigSherpa"
 
 [build-system]
 requires = ["setuptools>=68.0", "wheel"]

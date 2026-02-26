@@ -101,7 +101,7 @@ yarn.lock
 *.zip
 build/output/
 build/CustomPiOS/
-build/modules/axlelore/filesystem/
+build/modules/rigsherpa/filesystem/
 
 # Raw scraped data (large, regenerable)
 data/raw/

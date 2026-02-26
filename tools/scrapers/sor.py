@@ -1,4 +1,4 @@
-"""Specter Off-Road (SOR) parts catalog scraper for AxleLore.
+"""Specter Off-Road (SOR) parts catalog scraper for RigSherpa.
 
 Scrapes the sor.com 80-series catalog to extract part numbers,
 descriptions, fitment, and pricing.

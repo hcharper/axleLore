@@ -5,12 +5,12 @@
 #   ./upload-release.sh <file.img.gz> [file.img.gz.sha256] [file.img.gz.asc]
 #
 # Environment:
-#   R2_BUCKET        — bucket name  (default: axlelore-releases)
+#   R2_BUCKET        — bucket name  (default: rigsherpa-releases)
 #   R2_ENDPOINT_URL  — R2 S3-compat endpoint
 #   AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY — R2 credentials
 set -euo pipefail
 
-R2_BUCKET="${R2_BUCKET:-axlelore-releases}"
+R2_BUCKET="${R2_BUCKET:-rigsherpa-releases}"
 R2_ENDPOINT_URL="${R2_ENDPOINT_URL:?Set R2_ENDPOINT_URL (e.g. https://<account_id>.r2.cloudflarestorage.com)}"
 
 if [[ $# -lt 1 ]]; then

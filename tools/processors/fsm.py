@@ -1,4 +1,4 @@
-"""FSM (Factory Service Manual) PDF processor for AxleLore.
+"""FSM (Factory Service Manual) PDF processor for RigSherpa.
 
 Extracts text from Toyota FSM PDFs (scanned or digital) using PyMuPDF
 with Tesseract OCR fallback.  Classifies sections by heading patterns,
@@ -315,7 +315,7 @@ def process_directory(
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    parser = argparse.ArgumentParser(description="Process FSM PDFs into JSONL for AxleLore KB")
+    parser = argparse.ArgumentParser(description="Process FSM PDFs into JSONL for RigSherpa KB")
     parser.add_argument("input", type=Path, help="PDF file or directory of PDFs")
     parser.add_argument("-o", "--output", type=Path, default=None, help="Output JSONL path")
     parser.add_argument("--vehicle", default="fzj80", help="Vehicle type code")

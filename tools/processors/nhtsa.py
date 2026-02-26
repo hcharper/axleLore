@@ -1,4 +1,4 @@
-"""NHTSA data normalizer for AxleLore.
+"""NHTSA data normalizer for RigSherpa.
 
 Reads raw NHTSA JSON files (recalls and complaints) from data/raw/nhtsa/
 and produces data/fzj80_nhtsa.jsonl for the knowledge-base builder.
@@ -206,7 +206,7 @@ def process_nhtsa(
 def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
-    parser = argparse.ArgumentParser(description="Normalize NHTSA data into JSONL for AxleLore KB")
+    parser = argparse.ArgumentParser(description="Normalize NHTSA data into JSONL for RigSherpa KB")
     parser.add_argument("--input", type=Path, default=Path("data/raw/nhtsa"), help="Raw NHTSA data directory")
     parser.add_argument("--output", type=Path, default=None, help="Output JSONL path")
     args = parser.parse_args()

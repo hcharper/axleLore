@@ -1,4 +1,4 @@
-"""Scrape state manager for AxleLore — resume support for long-running scrapers.
+"""Scrape state manager for RigSherpa — resume support for long-running scrapers.
 
 Backs state to a SQLite database so scrapers can stop and resume without
 re-crawling already-seen pages and items.

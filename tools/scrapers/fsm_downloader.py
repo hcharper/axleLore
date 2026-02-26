@@ -1,4 +1,4 @@
-"""FSM PDF download helper for AxleLore.
+"""FSM PDF download helper for RigSherpa.
 
 Downloads the FZJ80 Factory Service Manual PDF from Google Drive using
 gdown, then invokes the existing FSM processor to generate JSONL.
