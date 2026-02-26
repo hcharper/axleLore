@@ -71,6 +71,19 @@ class NHTSAScraper(BaseScraper):
             for data_type in ("recalls", "complaints"):
                 await self._scrape_type(year, data_type)
 
+    async def _fetch_json(self, url: str) -> dict | None:
+        """Fetch NHTSA API endpoint, tolerating 400 (empty-result responses)."""
+        await self._rate_limit()
+        try:
+            response = await self.client.get(url)
+            # NHTSA returns 400 with valid JSON when there are 0 results
+            if response.status_code in (200, 400):
+                return response.json()
+            response.raise_for_status()
+        except Exception as e:
+            logger.warning("NHTSA request failed: %s — %s", url, e)
+        return None
+
     async def _scrape_type(self, year: int, data_type: str) -> None:
         if data_type == "recalls":
             url = (
@@ -84,15 +97,9 @@ class NHTSAScraper(BaseScraper):
             )
 
         logger.info("Fetching NHTSA %s for %d ...", data_type, year)
-        body = await self.fetch(url)
-        if not body:
+        data = await self._fetch_json(url)
+        if data is None:
             logger.warning("No response for %s %d", data_type, year)
-            return
-
-        try:
-            data = json.loads(body)
-        except json.JSONDecodeError:
-            logger.error("Invalid JSON for %s %d", data_type, year)
             return
 
         # Save raw JSON

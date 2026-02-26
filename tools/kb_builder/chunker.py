@@ -252,19 +252,26 @@ class SmartChunker:
         text_hash = hashlib.md5(text.encode()).hexdigest()[:8]
         chunk_id = f"{source}_{source_id}{suffix}_{text_hash}"
         
+        # Build metadata, filtering out None values (ChromaDB rejects them)
+        raw_meta = {
+            "title": doc.get("title", ""),
+            "url": doc.get("url", ""),
+            "date": doc.get("date"),
+            "quality_score": doc.get("quality_score", 0.0),
+            "vehicle_type": doc.get("metadata", {}).get("vehicle_type", ""),
+        }
+        metadata = {
+            k: v for k, v in raw_meta.items()
+            if v is not None and not isinstance(v, (dict, list))
+        }
+
         return Chunk(
             id=chunk_id,
             text=text.strip(),
             source=source,
             source_id=source_id,
             category=doc.get("category", "general"),
-            metadata={
-                "title": doc.get("title", ""),
-                "url": doc.get("url", ""),
-                "date": doc.get("date"),
-                "quality_score": doc.get("quality_score", 0.0),
-                "vehicle_type": doc.get("metadata", {}).get("vehicle_type", ""),
-            }
+            metadata=metadata,
         )
 
 

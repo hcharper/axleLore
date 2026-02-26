@@ -82,9 +82,9 @@ class KnowledgeBaseBuilder:
             Dict mapping category to collection
         """
         categories = [
-            "engine", "transmission", "axles", "suspension",
-            "brakes", "steering", "electrical", "body",
-            "cooling", "fuel", "exhaust", "general"
+            "engine", "drivetrain", "electrical", "chassis", "body",
+            "forum_troubleshoot", "forum_mods", "forum_maintenance",
+            "parts", "tsb", "general",
         ]
         
         collections = {}
@@ -124,17 +124,16 @@ class KnowledgeBaseBuilder:
             texts = [c.text for c in batch]
             embeddings = self.embedder.encode(texts, show_progress_bar=False).tolist()
             
-            # Add to collection
+            # Add to collection — filter metadata to ChromaDB-safe types
+            def _safe_meta(c):
+                raw = {"source": c.source, "source_id": c.source_id, "category": c.category, **c.metadata}
+                return {k: v for k, v in raw.items() if isinstance(v, (str, int, float, bool))}
+
             collection.add(
                 ids=[c.id for c in batch],
                 documents=texts,
                 embeddings=embeddings,
-                metadatas=[{
-                    "source": c.source,
-                    "source_id": c.source_id,
-                    "category": c.category,
-                    **c.metadata
-                } for c in batch]
+                metadatas=[_safe_meta(c) for c in batch],
             )
             
             logger.info(f"Added {min(i + batch_size, total)}/{total} chunks")
@@ -205,7 +204,7 @@ class KnowledgeBaseBuilder:
             List of search results
         """
         if categories is None:
-            categories = ["engine", "transmission", "axles", "electrical", "general"]
+            categories = ["engine", "drivetrain", "chassis", "electrical", "general"]
         
         # Generate query embedding
         query_embedding = self.embedder.encode([query])[0].tolist()
@@ -356,15 +355,15 @@ def main():
             text="Birfield rebuild requires removal of the steering knuckle.",
             source="ih8mud",
             source_id="12345",
-            category="axles",
+            category="drivetrain",
             metadata={"thread_id": "12345", "votes": 42}
         )
     ]
-    
+
     if "engine" in collections:
         builder.add_chunks(collections["engine"], [test_chunks[0]])
-    if "axles" in collections:
-        builder.add_chunks(collections["axles"], [test_chunks[1]])
+    if "drivetrain" in collections:
+        builder.add_chunks(collections["drivetrain"], [test_chunks[1]])
     
     # Test search
     results = builder.search("fzj80", "oil capacity")
