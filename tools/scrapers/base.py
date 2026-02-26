@@ -145,9 +145,27 @@ class BaseScraper(ABC):
     def save_batch(self, docs: list[ScrapedDocument], batch_name: str):
         """Save a batch of documents."""
         filepath = self.output_dir / f"{batch_name}.jsonl"
-        
+
         with open(filepath, "a") as f:
             for doc in docs:
                 f.write(json.dumps(doc.to_dict()) + "\n")
-                
+
         logger.info(f"Saved batch of {len(docs)} documents to {filepath}")
+
+    def save_raw(self, data, filename: str):
+        """Save raw scraped data for archival.
+
+        Args:
+            data: Data to save (dict/list serialized as JSON, or str saved as-is)
+            filename: Filename relative to output_dir
+        """
+        filepath = self.output_dir / filename
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(filepath, "w") as f:
+            if isinstance(data, (dict, list)):
+                json.dump(data, f, indent=2, default=str)
+            else:
+                f.write(str(data))
+
+        logger.debug(f"Saved raw: {filepath}")

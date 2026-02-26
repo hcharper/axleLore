@@ -103,6 +103,9 @@ build/output/
 build/CustomPiOS/
 build/modules/axlelore/filesystem/
 
+# Raw scraped data (large, regenerable)
+data/raw/
+
 # Knowledge packs (large binary data)
 data/knowledge_packs/
 data/chromadb/

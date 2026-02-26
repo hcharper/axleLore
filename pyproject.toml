@@ -1,9 +1,9 @@
 [project]
 name = "axlelore"
-version = "0.1.0"
+version = "0.2.0"
 description = "Local LLM-powered vehicle assistant for Raspberry Pi"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
     { name = "AxleLore Team" }
@@ -14,6 +14,7 @@ classifiers = [
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
@@ -54,6 +55,7 @@ build = [
     "pytesseract>=0.3.10",
     "langchain>=0.1.0",
     "langchain-text-splitters>=0.0.1",
+    "gdown>=5.0.0",
 ]
 
 [project.urls]
@@ -73,7 +75,7 @@ where = ["src"]
 
 [tool.black]
 line-length = 100
-target-version = ['py311']
+target-version = ['py310']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -91,7 +93,7 @@ extend-exclude = '''
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py310"
 select = [
     "E",  # pycodestyle errors
     "W",  # pycodestyle warnings
@@ -107,7 +109,7 @@ ignore = [
 ]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
