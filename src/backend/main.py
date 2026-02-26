@@ -12,7 +12,8 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.core.config import settings
 
@@ -31,6 +32,9 @@ logging.basicConfig(
     ],
 )
 logger = logging.getLogger(__name__)
+
+# Frontend static build directory
+_FRONTEND_BUILD = settings.project_root / "src" / "frontend" / "build"
 
 
 # ---------------------------------------------------------------------------
@@ -102,13 +106,8 @@ app.add_middleware(
 
 
 # ---------------------------------------------------------------------------
-# Root / health / info
+# Health / info  (registered before API routers)
 # ---------------------------------------------------------------------------
-
-@app.get("/")
-async def root():
-    return {"app": settings.app_name, "version": settings.app_version, "status": "running"}
-
 
 @app.get("/health")
 async def health_check():
@@ -141,9 +140,11 @@ async def api_info():
         "vehicle": settings.default_vehicle,
         "endpoints": {
             "chat": "/api/v1/chat/message",
+            "chat_stream": "/api/v1/chat/message/stream",
             "vehicles": "/api/v1/vehicles",
             "service": "/api/v1/service",
             "obd2": "/api/v1/obd2",
+            "obd2_live": "/api/v1/obd2/live",
             "kb": "/api/v1/kb/status",
             "system_device": "/api/v1/system/device",
             "system_version": "/api/v1/system/version",
@@ -154,11 +155,41 @@ async def api_info():
 
 
 # ---------------------------------------------------------------------------
-# Routers
+# API Routers
 # ---------------------------------------------------------------------------
 
 from backend.api import api_router  # noqa: E402
 app.include_router(api_router)
+
+
+# ---------------------------------------------------------------------------
+# Static frontend serving (SPA fallback)
+#
+# MUST be mounted AFTER API routers so /api/* routes take precedence.
+# ---------------------------------------------------------------------------
+
+if _FRONTEND_BUILD.is_dir():
+    app.mount("/_app", StaticFiles(directory=str(_FRONTEND_BUILD / "_app")), name="svelte-immutable")
+    app.mount("/static", StaticFiles(directory=str(_FRONTEND_BUILD)), name="static-assets")
+
+    @app.get("/{full_path:path}")
+    async def spa_fallback(full_path: str):
+        """Serve the SPA index.html for all non-API, non-static paths."""
+        # Try to serve an actual file first
+        file_path = _FRONTEND_BUILD / full_path
+        if file_path.is_file():
+            return FileResponse(str(file_path))
+        # Fall back to index.html for client-side routing
+        return FileResponse(str(_FRONTEND_BUILD / "index.html"))
+else:
+    @app.get("/")
+    async def root():
+        return {
+            "app": settings.app_name,
+            "version": settings.app_version,
+            "status": "running",
+            "frontend": "not built — run 'npm run build' in src/frontend/",
+        }
 
 
 # ---------------------------------------------------------------------------

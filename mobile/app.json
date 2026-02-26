@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "AxleLore",
+    "slug": "axlelore",
+    "version": "0.2.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "axlelore",
+    "splash": {
+      "backgroundColor": "#0a0e14"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.axlelore.mobile",
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "AxleLore needs local network access to connect to your Pi",
+        "NSBonjourServices": ["_http._tcp"]
+      }
+    },
+    "android": {
+      "package": "com.axlelore.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0a0e14"
+      }
+    },
+    "plugins": ["expo-router"]
+  }
+}

@@ -13,7 +13,10 @@ apt-get install -y --no-install-recommends \
     python3 python3-venv python3-pip python3-dev \
     git curl wget avahi-daemon avahi-utils \
     bluez libglib2.0-dev libdbus-1-dev \
-    network-manager \
+    network-manager dnsmasq \
+    cage chromium-browser \
+    plymouth plymouth-themes \
+    watchdog \
     gpg
 apt-get clean
 
@@ -223,7 +226,205 @@ DISPATCH
 chmod +x /etc/NetworkManager/dispatcher.d/50-axlelore-update
 
 # ──────────────────────────────────────────────
-# 9. Set ownership
+# 9. Persistent Wi-Fi hotspot (AP mode)
+# ──────────────────────────────────────────────
+# When no known Wi-Fi is in range (i.e. in the truck), the Pi auto-creates
+# an AP named AxleLore-FZJ80.  Uses NetworkManager — no hostapd needed.
+
+cat > /opt/axlelore/bin/hotspot-manager.sh <<'HOTSPOT'
+#!/bin/bash
+# Wait up to 30s for a known Wi-Fi connection, then start hotspot.
+set -euo pipefail
+SSID="${HOTSPOT_SSID:-AxleLore-FZJ80}"
+TIMEOUT=30
+
+for i in $(seq 1 $TIMEOUT); do
+    if nmcli -t -f TYPE,STATE connection show --active 2>/dev/null | grep -q "802-11-wireless:activated"; then
+        echo "Wi-Fi connected, hotspot not needed"
+        exit 0
+    fi
+    sleep 1
+done
+
+echo "No Wi-Fi found after ${TIMEOUT}s — starting hotspot: ${SSID}"
+nmcli device wifi hotspot ifname wlan0 ssid "${SSID}" password "axlelore80" band bg channel 6 || true
+HOTSPOT
+chmod +x /opt/axlelore/bin/hotspot-manager.sh
+
+cat > /etc/systemd/system/axlelore-hotspot.service <<'UNIT'
+[Unit]
+Description=AxleLore Wi-Fi Hotspot Manager
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/axlelore/bin/hotspot-manager.sh
+RemainAfterExit=yes
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+
+systemctl enable axlelore-hotspot.service
+
+# ──────────────────────────────────────────────
+# 10. Captive portal redirect (dnsmasq)
+# ──────────────────────────────────────────────
+# When in hotspot mode, redirect all DNS queries to the Pi so phones
+# auto-open the AxleLore UI (captive portal detection).
+
+cat > /etc/dnsmasq.d/axlelore-captive.conf <<'DNSMASQ'
+# Only active on the hotspot interface
+interface=wlan0
+bind-interfaces
+# DHCP range for hotspot clients
+dhcp-range=10.42.0.10,10.42.0.100,255.255.255.0,24h
+# Redirect all DNS to Pi (captive portal)
+address=/#/10.42.0.1
+DNSMASQ
+
+# Disable dnsmasq by default — NetworkManager starts it when hotspot is active
+systemctl disable dnsmasq
+
+# ──────────────────────────────────────────────
+# 11. Avahi / mDNS service advertisement
+# ──────────────────────────────────────────────
+mkdir -p /etc/avahi/services
+
+cat > /etc/avahi/services/axlelore.service <<'AVAHI'
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<service-group>
+  <name replace-wildcards="yes">AxleLore on %h</name>
+  <service>
+    <type>_http._tcp</type>
+    <port>8000</port>
+    <txt-record>path=/</txt-record>
+    <txt-record>version=0.2.0</txt-record>
+  </service>
+</service-group>
+AVAHI
+
+systemctl enable avahi-daemon
+
+# ──────────────────────────────────────────────
+# 12. Kiosk mode (Cage + Chromium)
+# ──────────────────────────────────────────────
+cat > /etc/systemd/system/axlelore-kiosk.service <<'UNIT'
+[Unit]
+Description=AxleLore Kiosk (Cage + Chromium)
+After=axlelore.service
+Wants=axlelore.service
+ConditionPathExists=/usr/bin/cage
+
+[Service]
+Type=simple
+User=axlelore
+Environment="WLR_LIBINPUT_NO_DEVICES=1"
+Environment="XDG_RUNTIME_DIR=/run/user/1000"
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/cage -- /usr/bin/chromium-browser \
+    --kiosk \
+    --noerrdialogs \
+    --no-first-run \
+    --disable-translate \
+    --disable-infobars \
+    --disable-session-crashed-bubble \
+    --disable-features=TranslateUI \
+    --ozone-platform=wayland \
+    http://localhost:8000
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target
+UNIT
+
+systemctl enable axlelore-kiosk.service
+
+# ──────────────────────────────────────────────
+# 13. Plymouth boot splash
+# ──────────────────────────────────────────────
+mkdir -p /usr/share/plymouth/themes/axlelore
+
+cat > /usr/share/plymouth/themes/axlelore/axlelore.plymouth <<'PLYMOUTH'
+[Plymouth Theme]
+Name=AxleLore
+Description=AxleLore boot splash
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/axlelore
+ScriptFile=/usr/share/plymouth/themes/axlelore/axlelore.script
+PLYMOUTH
+
+cat > /usr/share/plymouth/themes/axlelore/axlelore.script <<'SCRIPT'
+# Simple AxleLore boot splash: centered text on dark background
+Window.SetBackgroundTopColor(0.04, 0.05, 0.08);
+Window.SetBackgroundBottomColor(0.04, 0.05, 0.08);
+
+# Brand text
+brand = Sprite();
+brand_image = Image.Text("AxleLore", 0.2, 1.0, 0.2, 1, "JetBrains Mono");
+brand.SetImage(brand_image);
+brand.SetX(Window.GetWidth() / 2 - brand_image.GetWidth() / 2);
+brand.SetY(Window.GetHeight() / 2 - 30);
+
+# Subtitle
+sub = Sprite();
+sub_image = Image.Text("FZJ80 Vehicle Assistant", 0.42, 0.48, 0.55, 0.6, "JetBrains Mono");
+sub.SetImage(sub_image);
+sub.SetX(Window.GetWidth() / 2 - sub_image.GetWidth() / 2);
+sub.SetY(Window.GetHeight() / 2 + 10);
+
+# Spinner dots
+fun refresh_callback() {
+    # Simple progress indicator
+}
+Plymouth.SetRefreshFunction(refresh_callback);
+SCRIPT
+
+# Set as default Plymouth theme
+plymouth-set-default-theme axlelore 2>/dev/null || true
+
+# ──────────────────────────────────────────────
+# 14. Read-only root filesystem (overlayfs)
+# ──────────────────────────────────────────────
+# Enable overlayfs for SD card longevity and crash recovery.
+# Writable bind-mounts for data and state directories.
+raspi-config nonint enable_overlayfs 2>/dev/null || true
+
+# Ensure writable dirs are bind-mounted (added to fstab)
+cat >> /etc/fstab <<'FSTAB'
+# AxleLore writable bind-mounts (survive overlayfs)
+tmpfs /tmp tmpfs defaults,noatime,nosuid,nodev,size=64M 0 0
+/opt/axlelore/data /opt/axlelore/data none bind,nofail 0 0
+/var/lib/axlelore /var/lib/axlelore none bind,nofail 0 0
+FSTAB
+
+# ──────────────────────────────────────────────
+# 15. Hardware watchdog
+# ──────────────────────────────────────────────
+# Enable bcm2835_wdt kernel module
+echo "bcm2835_wdt" >> /etc/modules
+
+# Configure watchdog daemon
+cat > /etc/watchdog.conf <<'WDG'
+watchdog-device = /dev/watchdog
+watchdog-timeout = 15
+max-load-1 = 24
+min-memory = 1
+WDG
+
+systemctl enable watchdog
+
+# Add WatchdogSec to the main service for systemd-level watchdog
+sed -i '/^Restart=always/a WatchdogSec=60' /etc/systemd/system/axlelore.service
+
+# ──────────────────────────────────────────────
+# 16. Set ownership
 # ──────────────────────────────────────────────
 chown -R "${AXLELORE_USER}:${AXLELORE_USER}" "${AXLELORE_INSTALL_DIR}"
 mkdir -p /var/lib/axlelore

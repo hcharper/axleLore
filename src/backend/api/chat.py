@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime
-from typing import Optional
+from typing import AsyncIterator, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -51,6 +53,89 @@ class ChatHistoryItem(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+async def _build_rag_pipeline(body: ChatMessageIn, session: AsyncSession):
+    """Shared RAG pipeline: build vehicle context, retrieve, build prompt.
+
+    Returns (vehicle_type, vehicle_name, rag_ctx, system_prompt).
+    """
+    vehicle_type = settings.default_vehicle
+    vehicle_context_str = ""
+
+    if body.vehicle_id is not None:
+        try:
+            ctx = await vehicle_service.build_context(session, body.vehicle_id)
+            vehicle_type = ctx.vehicle_type
+            vehicle_context_str = ctx.to_prompt_string()
+            vehicle_name = ctx.vehicle_name
+        except ValueError:
+            raise HTTPException(status_code=404, detail="Vehicle not found")
+    else:
+        ctx = vehicle_service.build_context_from_config(vehicle_type)
+        vehicle_context_str = ctx.to_prompt_string()
+        vehicle_name = vehicle_type.upper()
+
+    rag_ctx = rag_service.assemble_context(
+        query=body.message,
+        vehicle_type=vehicle_type,
+        vehicle_context=vehicle_context_str,
+    )
+
+    system_prompt = chat_service.build_system_prompt(
+        vehicle_name=vehicle_name,
+        vehicle_context=vehicle_context_str,
+        retrieved_context=rag_ctx.formatted,
+    )
+
+    return vehicle_type, vehicle_name, rag_ctx, system_prompt
+
+
+async def _persist_messages(
+    session: AsyncSession,
+    vehicle_id: int | None,
+    user_message: str,
+    assistant_content: str,
+    rag_chunks: list,
+    tokens_used: int = 0,
+) -> None:
+    """Save user + assistant messages to the database."""
+    from backend.models.database import ChatMessage
+
+    # For messages without a vehicle_id, we skip persistence since the
+    # ChatMessage model requires a vehicle_id foreign key.
+    if vehicle_id is None:
+        return
+
+    now = datetime.utcnow()
+
+    user_msg = ChatMessage(
+        vehicle_id=vehicle_id,
+        timestamp=now,
+        role="user",
+        content=user_message,
+    )
+    session.add(user_msg)
+
+    context_data = [
+        {"source": c.source, "category": c.category, "score": c.score}
+        for c in rag_chunks
+    ] if rag_chunks else None
+
+    assistant_msg = ChatMessage(
+        vehicle_id=vehicle_id,
+        timestamp=now,
+        role="assistant",
+        content=assistant_content,
+        context=context_data,
+        tokens_used=tokens_used,
+    )
+    session.add(assistant_msg)
+    await session.commit()
+
+
+# ---------------------------------------------------------------------------
 # Endpoints
 # ---------------------------------------------------------------------------
 
@@ -61,37 +146,9 @@ async def send_message(
 ) -> ChatResponse:
     """Full RAG pipeline: retrieve context → build prompt → generate response."""
 
-    vehicle_type = settings.default_vehicle
-    vehicle_context_str = ""
+    vehicle_type, vehicle_name, rag_ctx, system_prompt = await _build_rag_pipeline(body, session)
 
-    # 1. Build vehicle context
-    if body.vehicle_id is not None:
-        try:
-            ctx = await vehicle_service.build_context(session, body.vehicle_id)
-            vehicle_type = ctx.vehicle_type
-            vehicle_context_str = ctx.to_prompt_string()
-        except ValueError:
-            raise HTTPException(status_code=404, detail="Vehicle not found")
-    else:
-        # Fallback to config-only context
-        ctx = vehicle_service.build_context_from_config(vehicle_type)
-        vehicle_context_str = ctx.to_prompt_string()
-
-    # 2. RAG retrieval
-    rag_ctx = rag_service.assemble_context(
-        query=body.message,
-        vehicle_type=vehicle_type,
-        vehicle_context=vehicle_context_str,
-    )
-
-    # 3. Build prompt
-    system_prompt = chat_service.build_system_prompt(
-        vehicle_name=ctx.vehicle_name if body.vehicle_id else vehicle_type.upper(),
-        vehicle_context=vehicle_context_str,
-        retrieved_context=rag_ctx.formatted,
-    )
-
-    # 4. Generate
+    # Generate
     try:
         llm_resp = await chat_service.generate(
             prompt=body.message,
@@ -101,7 +158,7 @@ async def send_message(
         logger.error("LLM generation failed: %s", exc)
         raise HTTPException(status_code=503, detail="LLM service unavailable")
 
-    # 5. Build source references
+    # Build source references
     sources = [
         SourceRef(
             index=i + 1,
@@ -113,11 +170,89 @@ async def send_message(
         for i, c in enumerate(rag_ctx.chunks)
     ]
 
+    # Persist to database
+    await _persist_messages(
+        session,
+        body.vehicle_id,
+        body.message,
+        llm_resp.content,
+        rag_ctx.chunks,
+        llm_resp.tokens_used,
+    )
+
     return ChatResponse(
         response=llm_resp.content,
         sources=sources,
         tokens_used=llm_resp.tokens_used,
         model=llm_resp.model,
+    )
+
+
+@router.post("/message/stream")
+async def send_message_stream(
+    body: ChatMessageIn,
+    session: AsyncSession = Depends(get_session),
+):
+    """SSE streaming RAG pipeline.
+
+    RAG retrieval happens synchronously before streaming begins.
+    LLM tokens stream as ``data:`` events.  Sources are sent as a
+    final ``event: sources`` SSE event.
+    """
+    vehicle_type, vehicle_name, rag_ctx, system_prompt = await _build_rag_pipeline(body, session)
+
+    sources = [
+        SourceRef(
+            index=i + 1,
+            source=c.source,
+            category=c.category,
+            score=round(c.score, 3),
+            title=c.metadata.get("title", ""),
+        )
+        for i, c in enumerate(rag_ctx.chunks)
+    ]
+
+    async def event_generator() -> AsyncIterator[str]:
+        full_response = ""
+        try:
+            async for token in chat_service.generate_stream(
+                prompt=body.message,
+                system_prompt=system_prompt,
+            ):
+                full_response += token
+                yield f"data: {json.dumps({'token': token})}\n\n"
+        except Exception as exc:
+            logger.error("Streaming generation failed: %s", exc)
+            yield f"event: error\ndata: {json.dumps({'error': str(exc)})}\n\n"
+            return
+
+        # Send sources as final event
+        sources_data = [s.model_dump() for s in sources]
+        yield f"event: sources\ndata: {json.dumps({'sources': sources_data})}\n\n"
+
+        # Send done event
+        yield f"event: done\ndata: {json.dumps({'tokens_used': len(full_response)})}\n\n"
+
+        # Persist to database (best-effort, after stream completes)
+        try:
+            await _persist_messages(
+                session,
+                body.vehicle_id,
+                body.message,
+                full_response,
+                rag_ctx.chunks,
+            )
+        except Exception as exc:
+            logger.warning("Failed to persist streamed message: %s", exc)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

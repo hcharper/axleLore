@@ -30,10 +30,7 @@ pip install -e .
 curl -fsSL https://ollama.ai/install.sh | sh
 
 # Pull the model
-ollama pull mistral:7b-instruct-q4_K_M
-
-# Initialize database
-python -m backend.scripts.init_db
+ollama pull qwen3:1.7b
 
 # Start the server
 python -m backend.main
