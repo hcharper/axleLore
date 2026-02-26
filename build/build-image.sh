@@ -5,7 +5,7 @@
 #   ./build-image.sh <vehicle_type>         # e.g. ./build-image.sh fzj80
 #   VEHICLE_TYPE=fzj80 ./build-image.sh     # alternative
 #
-# Requires: Docker (or a Debian/Ubuntu host with qemu-user-static)
+# Requires: Docker
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -110,23 +110,61 @@ export WIFI_CONNECT_VERSION
 OUTPUT_DIR="$SCRIPT_DIR/output"
 mkdir -p "$OUTPUT_DIR"
 
-# Build using Docker (cross-compile arm64 on x86_64)
+# Restore CustomPiOS framework config before Docker build (may have been overwritten
+# by a previous build's distribution config). The Docker image must contain the
+# original framework config script, not our distribution variables.
+git -C "$CUSTOMPIOS_DIR" checkout -- src/config
+
+# Build the Docker image from clean CustomPiOS source
+echo ""
+echo "Building cross-compilation Docker image..."
+docker build --tag custompios_builder "$CUSTOMPIOS_DIR/src"
+
 echo ""
 echo "Building image (this may take 30-60 minutes)..."
 echo ""
 
 pushd "$CUSTOMPIOS_DIR/src" > /dev/null
 
-# Link our module into the CustomPiOS workspace
-ln -sfn "$SCRIPT_DIR/modules/rigsherpa" modules/rigsherpa
+# Copy our module into the CustomPiOS workspace (not symlink — Docker needs real files)
+rm -rf modules/rigsherpa
+cp -r "$SCRIPT_DIR/modules/rigsherpa" modules/rigsherpa
 
-# Create the build config
+# Create the distribution config (separate from the framework config in the Docker image)
 cat > config <<BUILDCFG
 export MODULES="base(rigsherpa)"
 export BASE_ARCH="arm64"
+export BASE_BOARD="raspberrypiarm64"
+export BASE_IMAGE_ENLARGEROOT=12000
 BUILDCFG
 
-sudo bash -x build
+# Run the build inside a privileged Docker container (no sudo needed)
+# /distro = our distribution (config, modules, workspace output)
+# /CustomPiOS = the framework (preserved in the Docker image with original config)
+docker run --rm --privileged \
+    -v "$(pwd):/distro" \
+    -e DIST_PATH=/distro \
+    -e CUSTOM_PI_OS_PATH=/CustomPiOS \
+    -e BASE_BOARD=raspberrypiarm64 \
+    -e LOG=no \
+    -e VEHICLE_TYPE="$VEHICLE_TYPE" \
+    -e VEHICLE_NAME="$VEHICLE_NAME" \
+    -e RIGSHERPA_VERSION="$RIGSHERPA_VERSION" \
+    -e OLLAMA_MODEL="${OLLAMA_MODEL:-}" \
+    -e OLLAMA_FALLBACK_MODEL="${OLLAMA_FALLBACK_MODEL:-}" \
+    -e PULL_FALLBACK="${PULL_FALLBACK:-}" \
+    -e EMBEDDING_MODEL="${EMBEDDING_MODEL:-}" \
+    -e WIFI_CONNECT_VERSION="${WIFI_CONNECT_VERSION:-}" \
+    custompios_builder \
+    bash -c '
+        set -ex
+        export BASE_IMAGE_PATH=${DIST_PATH}/image-${BASE_BOARD}
+        mkdir -p "${BASE_IMAGE_PATH}"
+        ${CUSTOM_PI_OS_PATH}/custompios_core/base_image_downloader.py
+        bash -x ${CUSTOM_PI_OS_PATH}/build_custom_os
+        chmod -R a+rX ${DIST_PATH}/workspace/
+    '
+
 popd > /dev/null
 
 # ── collect output ───────────────────────────
@@ -134,7 +172,7 @@ TIMESTAMP="$(date +%Y%m%d)"
 OUTPUT_NAME="rigsherpa-${VEHICLE_TYPE}-${RIGSHERPA_VERSION}-${TIMESTAMP}"
 
 # CustomPiOS places images in src/workspace/
-BUILT_IMAGE=$(find "$CUSTOMPIOS_DIR/src/workspace/" -name '*.img' -type f | head -1)
+BUILT_IMAGE=$(find "$CUSTOMPIOS_DIR/src/workspace/" -name '*.img' -type f 2>/dev/null | head -1)
 if [[ -z "$BUILT_IMAGE" ]]; then
     echo "Error: No image found after build."
     exit 1

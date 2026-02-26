@@ -14,7 +14,7 @@ apt-get install -y --no-install-recommends \
     git curl wget avahi-daemon avahi-utils \
     bluez libglib2.0-dev libdbus-1-dev \
     network-manager dnsmasq \
-    cage chromium-browser \
+    cage chromium \
     plymouth plymouth-themes \
     watchdog \
     gpg
@@ -37,12 +37,15 @@ fi
 # ──────────────────────────────────────────────
 mkdir -p "${RIGSHERPA_INSTALL_DIR}"
 
-# Source code and configs are placed by the filesystem/ layer
-# (build-image.sh copies the repo tree into filesystem/opt/rigsherpa/)
+# CustomPiOS places filesystem layer at /filesystem/ inside the chroot.
+# Copy our app from there to the final install location.
+if [ -d /filesystem/opt/rigsherpa ]; then
+    cp -a /filesystem/opt/rigsherpa/. "${RIGSHERPA_INSTALL_DIR}/"
+fi
 
 python3 -m venv "${RIGSHERPA_VENV_DIR}"
-"${RIGSHERPA_VENV_DIR}/bin/pip" install --upgrade pip wheel setuptools
-"${RIGSHERPA_VENV_DIR}/bin/pip" install -e "${RIGSHERPA_INSTALL_DIR}"
+"${RIGSHERPA_VENV_DIR}/bin/pip" install --no-cache-dir --upgrade pip wheel setuptools
+"${RIGSHERPA_VENV_DIR}/bin/pip" install --no-cache-dir -e "${RIGSHERPA_INSTALL_DIR}"
 
 # Pre-cache the embedding model so first boot needs no internet
 "${RIGSHERPA_VENV_DIR}/bin/python" -c "
@@ -55,6 +58,10 @@ print('Embedding model cached')
 # 4. Install Ollama
 # ──────────────────────────────────────────────
 curl -fsSL https://ollama.ai/install.sh | sh
+
+# Remove GPU libraries — Pi 5 has no NVIDIA/AMD GPU (saves ~2GB)
+rm -rf /usr/local/lib/ollama/cuda_* /usr/local/lib/ollama/rocm_* 2>/dev/null || true
+rm -rf /usr/lib/ollama/cuda_* /usr/lib/ollama/rocm_* 2>/dev/null || true
 
 # Pull models (Ollama must be running)
 ollama serve &
@@ -105,11 +112,18 @@ DOTENV
 # ──────────────────────────────────────────────
 # 7. Install wifi-connect (captive portal)
 # ──────────────────────────────────────────────
-WIFI_CONNECT_TAG="${WIFI_CONNECT_VERSION:-4.11.35}"
-WIFI_CONNECT_URL="https://github.com/balena-os/wifi-connect/releases/download/v${WIFI_CONNECT_TAG}/wifi-connect-v${WIFI_CONNECT_TAG}-linux-aarch64.tar.gz"
+WIFI_CONNECT_TAG="${WIFI_CONNECT_VERSION:-4.11.84}"
+WIFI_CONNECT_URL="https://github.com/balena-os/wifi-connect/releases/download/v${WIFI_CONNECT_TAG}/wifi-connect-aarch64-unknown-linux-gnu.tar.gz"
 
 mkdir -p /opt/wifi-connect
-wget -qO- "${WIFI_CONNECT_URL}" | tar xz -C /opt/wifi-connect
+WIFI_TMP="/tmp/wifi-connect.tar.gz"
+if wget --tries=3 --timeout=30 -O "${WIFI_TMP}" "${WIFI_CONNECT_URL}"; then
+    tar xzf "${WIFI_TMP}" -C /opt/wifi-connect
+    rm -f "${WIFI_TMP}"
+else
+    echo "WARNING: wifi-connect download failed — will install on first boot"
+    rm -f "${WIFI_TMP}"
+fi
 
 # ──────────────────────────────────────────────
 # 8. Install systemd units
@@ -325,7 +339,7 @@ User=rigsherpa
 Environment="WLR_LIBINPUT_NO_DEVICES=1"
 Environment="XDG_RUNTIME_DIR=/run/user/1000"
 ExecStartPre=/bin/sleep 5
-ExecStart=/usr/bin/cage -- /usr/bin/chromium-browser \
+ExecStart=/usr/bin/cage -- /usr/bin/chromium \
     --kiosk \
     --noerrdialogs \
     --no-first-run \
